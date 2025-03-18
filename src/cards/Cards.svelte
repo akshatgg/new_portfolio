@@ -18,14 +18,14 @@
 		},
 		{
 			name: 'Taleox',
-			image: '/assests/Pms.jpeg',
+			image: '/assests/Taleox.png',
 			about:
 				'Taleox (LMS) is a full-featured Learning Management System enabling 1,000+ users to access courses, assignments, and assessments with a seamless UI and secure role-based access.',
 			tech: ['React JS', 'MERN', 'TailwindCSS','Particlejs']
 		},
 		{
 			name: 'PrepSaarthi',
-			image: '/assests/rann.png',
+			image: '/assests/prep.png',
 			about: 'PrepSaarthi is a mentorship platform connecting IIT-JEE aspirants with mentors who have successfully cleared the exam, providing personalized guidance and support throughout their preparation journey.',
 			tech: ['React JS', 'Material UI', 'TailwindCSS','MERN']
 		}

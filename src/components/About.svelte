@@ -11,7 +11,7 @@
 	</div>
 	<div class="flex flex-col md:flex-row justify-evenly items-center gap-10 w-full py-16 md:py-20">
 		<div class="w-full lg:w-1/2 text-lg text-primary-button">
-			As a frontend developer proficient in React, Next.js, and Svelte, I bring a passion for
+			As a Full Stack Developer proficient in React, Next.js, MERN and hpanel, I bring a passion for
 			crafting engaging user experiences to every project. With a keen eye for design and a
 			commitment to clean, efficient code, I thrive on turning concepts into intuitive, dynamic
 			interfaces.
@@ -21,7 +21,7 @@
 				<p class="py-4 text-green-400">
 					Dynamic frontend developer skilled in React, Next.js, Svelte. Elevate projects.
 				</p>
-				<a href="/assests/mayank.pdf" target="_blank">
+				<a href="/assests/Akshat.pdf" target="_blank">
 					<button class="border-[1px] rounded-full px-6 py-2 border-border text-green-200">
 						<span class="text-lg">&lt;</span>&nbsp;RESUME&nbsp;/<span class="text-lg">&gt; </span>
 					</button>
