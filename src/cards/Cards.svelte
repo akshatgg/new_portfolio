@@ -12,7 +12,7 @@
 		},
 		{
 			name: 'AntiSocial',
-			image: '/assests/hall.png',
+			image: '/assests/anti.png',
 			about: `AntiSocial is an Instagram clone with real-time chat, photo sharing, and stories, enhancing user engagement and retention. `,
 			tech: ['NextJS ', 'TailwindCSS','MERN','Razorpay']
 		},
