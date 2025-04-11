@@ -5,7 +5,7 @@
 	let projects = [
 		{
 			name: 'Cosmic-Trek',
-			image: '/assests/sandesh.png',
+			image: '/assests/Cosmic.png',
 			about:
 				'Cosmic-Trek is an interactive orrery app that simulates planetary motions, satellite trajectories, and space exploration scenarios with real-time visualizations. ',
 			tech: ['ThreeJs', 'pynb','WebGl','D3Js']
