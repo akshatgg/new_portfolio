@@ -8,7 +8,7 @@
 			image:"/assests/frontend.webp",
 			about:
 				'I enjoy creating visually appealing and user-friendly interfaces.',
-			tech: ['Particle JS', 'REACT JS', 'NEXT JS', 'Redux', 'TAILWIND CSS']
+			tech: ['Particle JS', 'REACT JS', 'NEXT JS', 'Angular', 'TAILWIND CSS']
 		},
 		{
 			name: 'Backend',

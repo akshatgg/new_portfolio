@@ -11,7 +11,7 @@
 	</div>
 	<div class="flex flex-col md:flex-row justify-evenly items-center gap-10 w-full py-16 md:py-20">
 		<div class="w-full lg:w-1/2 text-lg text-primary-button">
-			As a Full Stack Developer proficient in React, Next.js, MERN and hpanel, I bring a passion for
+			As a Full Stack Developer proficient in React, Next.js, MERN, prisma ORM and hpanel, I bring a passion for
 			crafting engaging user experiences to every project. With a keen eye for design and a
 			commitment to clean, efficient code, I thrive on turning concepts into intuitive, dynamic
 			interfaces.

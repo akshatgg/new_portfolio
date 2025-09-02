@@ -3,6 +3,13 @@
 	import Saos from 'saos';
 
 	let projects = [
+			{
+			name: 'Legal E-Library ',
+			image: '/assests/Elibrary.png',
+			about:
+				'Legal E-Library is a comprehensive digital library offering access to a vast collection of legal resources, including case law, statutes, and legal commentary, all within a user-friendly interface.',
+			tech: ['Angular','Prisma ORM','PostgreSQL','NodeJS','ExpressJS']
+		},
 		{
 			name: 'Cosmic-Trek',
 			image: '/assests/Cosmic.png',
@@ -16,13 +23,7 @@
 			about: `AntiSocial is an Instagram clone with real-time chat, photo sharing, and stories, enhancing user engagement and retention. `,
 			tech: ['NextJS ', 'TailwindCSS','MERN','Razorpay']
 		},
-		{
-			name: 'Taleox',
-			image: '/assests/Taleox.png',
-			about:
-				'Taleox (LMS) is a full-featured Learning Management System enabling 1,000+ users to access courses, assignments, and assessments with a seamless UI and secure role-based access.',
-			tech: ['React JS', 'MERN', 'TailwindCSS','Particlejs']
-		},
+	
 		{
 			name: 'PrepSaarthi',
 			image: '/assests/prep.png',
