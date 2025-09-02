@@ -1,9 +1,8 @@
+
 {
-    "version": 2,
-    "build": {
-      "env": {
-        "NODE_VERSION": "22"
-      }
+  "build": {
+    "env": {
+      "VERCEL_NODE_VERSION": "22"
     }
   }
-  
+}
