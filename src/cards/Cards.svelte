@@ -17,7 +17,7 @@
 			name: 'iTaxEasy',
 			image: '/assests/itax.png',
 			about: 'iTaxEasy is a comprehensive tax filing and management platform that simplifies income tax returns, GST filing, and financial compliance for individuals and businesses.',
-			tech: ['Next JS', 'TailwindCSS', 'Prisma ORM', 'PSQL'],
+			tech: ['Next JS', 'TailwindCSS', 'Prisma ORM', 'PSQL', 'NodeJS', 'ExpressJS'],
 			github: 'https://github.com/akshatgg/itax_next_main',
 			link: 'https://itaxeasy.com/',
 			isPrivate: false
@@ -73,7 +73,7 @@
 			class="border-0 border-border w-full min-h-96 group relative px-2 md:px-12 py-6 md:py-8 text-center rounded-lg shadow-xl shadow-shadow flex justify-center items-center my-6 md:my-12 bg-primary"
 		>
 			<span
-				class="ease absolute left-0 top-0 h-0 w-0 border-t-2 border-border transition-all duration-200 group-hover:w-full"
+				class="ease absolute left-0 top-0 h-0 w-0 borde	r-t-2 border-border transition-all duration-200 group-hover:w-full"
 			></span>
 			<span
 				class="ease absolute right-0 top-0 h-0 w-0 border-r-2 border-border transition-all duration-200 group-hover:h-full"
