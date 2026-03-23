@@ -8,10 +8,19 @@
 			name: 'UpInTheSky',
 			image: '/assests/upinthesky.png',
 			about: 'UpInTheSky is a travel platform that helps you create life long memories with curated travel experiences, stories, and adventure planning.',
-			tech: ['SvelteKit', 'TailwindCSS', 'Netlify'],
+			tech: ['NextJS', 'TailwindCSS', 'Firebase', 'Shadecn'],
 			link: 'https://dev-upinthesky.netlify.app/',
 			github: 'https://github.com/akshatgg/UpintheSky',
 			isPrivate: true
+		},
+		{
+			name: 'iTaxEasy',
+			image: '/assests/itax.png',
+			about: 'iTaxEasy is a comprehensive tax filing and management platform that simplifies income tax returns, GST filing, and financial compliance for individuals and businesses.',
+			tech: ['Next JS', 'TailwindCSS', 'Prisma ORM', 'PSQL'],
+			github: 'https://github.com/akshatgg/itax_next_main',
+			link: 'https://itaxeasy.com/',
+			isPrivate: false
 		},
 		{
 			name: 'Legal E-Library',
@@ -37,15 +46,6 @@
 			about: 'AntiSocial is an Instagram clone with real-time chat, photo sharing, and stories, enhancing user engagement and retention.',
 			tech: ['NextJS', 'TailwindCSS','MERN','Razorpay'],
 			github: 'https://github.com/akshatgg/AntiSocial',
-			isPrivate: false
-		},
-		{
-			name: 'iTaxEasy',
-			image: '/assests/itax.png',
-			about: 'iTaxEasy is a comprehensive tax filing and management platform that simplifies income tax returns, GST filing, and financial compliance for individuals and businesses.',
-			tech: ['Next JS', 'TailwindCSS', 'MERN'],
-			github: 'https://github.com/akshatgg/itax_next_main',
-			link: 'https://itaxeasy.com/',
 			isPrivate: false
 		},
 		{
