@@ -7,8 +7,8 @@
 <section
 	class="grid grid-cols-1 lg:grid-cols-2 px-6 gap-12 min-h-[calc(100vh-80px)] mt-[64px] lg:mt-[80px]"
 >
-	<div class="flex flex-col justify-center items-center md:text-center gap-2 font-semi-bold">
-		<div class="text-3xl md:text-5xl gap-2 flex flex-col">
+	<div class="flex flex-col justify-center items-center text-center gap-2 font-semi-bold px-4 md:px-0">
+		<div class="text-2xl sm:text-3xl md:text-5xl gap-2 flex flex-col">
 			<div>
 				<span class="break-keep	">
 					Hi! I&nbsp;am&nbsp;<span class="text-secondary">Akshat&nbsp;</span><span>Gupta&nbsp;and</span>
@@ -17,8 +17,8 @@
 			</div>
 		</div>
 
-		<span class="text-base md:text-lg md:mt-8 md:px-10 text-border">
-			I have a deep-seated love for code design, relishing the intricate art of transforming substantial and multifaceted challenges into elegant, efficient code.
+		<span class="text-sm sm:text-base md:text-lg mt-4 md:mt-8 px-2 md:px-10 text-border">
+			Software Engineer who turns complex problems into scalable systems. From building observability stacks to co-founding startups — I ship code that performs under pressure.
 		</span>
 		<a href={`#contact`}>
 			<button

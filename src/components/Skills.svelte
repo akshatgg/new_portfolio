@@ -6,7 +6,7 @@
 	class="h-max mt-[64px] md:mt-[80px] flex flex-col w-full justify-center items-center gap-10"
 >
 	<div
-		class="bg-gradient-to-r from-secondary-left to-indigo-700 text-transparent bg-clip-text text-4xl md:text-5xl uppercase"
+		class="bg-gradient-to-r from-secondary-left to-indigo-700 text-transparent bg-clip-text text-3xl md:text-5xl uppercase"
 	>
 		<span>&lt;&nbsp;&nbsp;Skills&nbsp;&nbsp;/&gt;</span>
 	</div>
@@ -17,7 +17,7 @@
 		</p>
 	</div>
 
-	<div class="flex justify-items-center container px-4 ">
+	<div class="flex justify-items-center w-full px-4 md:px-8 lg:container">
 		<Tech />
 	</div>
 </section>

@@ -57,7 +57,7 @@
 </script>
 
 <section class="h-max mt-[64px] md:mt-[80px] flex flex-col w-full items-center px-4 md:px-12 lg:container">
-    <div class="bg-gradient-to-r from-secondary-left to-indigo-700 text-transparent bg-clip-text text-4xl md:text-5xl uppercase">
+    <div class="bg-gradient-to-r from-secondary-left to-indigo-700 text-transparent bg-clip-text text-3xl md:text-5xl uppercase">
         <span>&lt;&nbsp;&nbsp;Contact Me&nbsp;&nbsp;/&gt;</span>
     </div>
     
@@ -111,13 +111,19 @@
     }
 
     .submit-button {
-        width: 33%;
+        width: 60%;
         border: 1px solid var(--border-color);
         border-radius: 0.5rem;
         padding: 0.5rem 1rem;
         font-size: 1.25rem;
         color: rgb(34, 197, 94);
         transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    @media (min-width: 768px) {
+        .submit-button {
+            width: 33%;
+        }
     }
 
     .submit-button:hover {
