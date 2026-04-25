@@ -1,75 +1,80 @@
 <script>
 	import Icon from '@iconify/svelte';
-	import { onMount } from 'svelte';
 
 	export let sections = [];
 	export let activeSectionId;
-	// export let activeSection;
 	export let y;
 
 	let drawerVisible = false;
-
-	// onMount(() => {
-	// 	console.log(activeSection);
-	// });
 </script>
 
 <div
-	class={'fixed z-10 w-full h-16 md:h-20 text-white flex justify-between items-center px-4 md:px-16 ' +
-		(y > 0 ? 'bg-transparent backdrop-blur-md border-b-[1px] border-border-bottom' : 'bg-primary')}
+	class={'fixed z-50 w-full h-16 md:h-20 text-white flex justify-between items-center px-5 md:px-12 transition-all duration-300 ' +
+		(y > 0 ? 'bg-black/70 backdrop-blur-xl border-b border-white/5' : 'bg-transparent')}
 >
-	<span class="text-3xl text-secondary">&lt;&nbsp;</span>
-	<div class="md:gap-10 hidden md:flex">
+	<a href="#home" class="font-mono text-base md:text-lg flex items-center gap-1.5 group">
+		<span class="accent">~/</span>
+		<span class="text-soft group-hover:text-white transition">akshat</span>
+	</a>
+
+	<nav class="hidden md:flex items-center gap-1">
 		{#each sections as { name, id }}
-			<li type="none">
-				<a href={`#${id}`} class:active={activeSectionId === id}>
-					<span
-						class="hover:text-secondary group transition-all duration-300 ease-in-out cursor-pointer text-secondary text-lg"
-					>
-						<p
-							class={`mx-3 bg-left-bottom bg-gradient-to-r from-border to-border bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-600 ease-out`}
-						>
-							{name}
-						</p>
-					</span></a
-				>
-			</li>
+			<a
+				href={`#${id}`}
+				class={'relative px-3.5 py-2 text-sm font-mono transition ' +
+					(activeSectionId === id ? 'text-white' : 'text-muted hover:text-white')}
+			>
+				{name}
+				{#if activeSectionId === id}
+					<span class="absolute left-3.5 right-3.5 -bottom-0.5 h-px bg-green-400"></span>
+				{/if}
+			</a>
 		{/each}
-	</div>
+	</nav>
 
-	<span class="text-3xl text-secondary hidden md:flex">&nbsp;/&gt;</span>
+	<a
+		href="/Akshat.pdf"
+		target="_blank"
+		class="hidden md:inline-flex items-center gap-2 px-4 py-1.5 rounded-md surface surface-hover text-soft text-sm font-mono"
+	>
+		<Icon icon="mdi:file-document-outline" class="text-base" />
+		Resume
+	</a>
 
-	<button on:click={() => (drawerVisible = !drawerVisible)} class="md:hidden flex px-4">
-		<Icon icon="mdi:hamburger-menu" class="md:hidden flex text-secondary text-2xl" />
+	<button
+		on:click={() => (drawerVisible = !drawerVisible)}
+		class="md:hidden flex p-2 rounded-md surface text-soft"
+		aria-label="Open menu"
+	>
+		<Icon icon={drawerVisible ? 'mdi:close' : 'mdi:menu'} class="text-xl" />
 	</button>
 
 	{#if drawerVisible}
 		<div class="drawer flex flex-col">
-			<div
-				class="h-14 w-full border-b-[1px] border-border-bottom px-4 flex justify-between items-center"
-			>
-				<button on:click={() => (drawerVisible = !drawerVisible)}>
-					<Icon icon="mdi:close" class="md:hidden flex text-secondary text-2xl" />
+			<div class="h-16 w-full border-b border-white/5 px-5 flex justify-between items-center">
+				<span class="font-mono text-soft text-sm">menu</span>
+				<button on:click={() => (drawerVisible = !drawerVisible)} aria-label="Close">
+					<Icon icon="mdi:close" class="text-soft text-xl" />
 				</button>
 			</div>
-			<div class="flex flex-col gap-4 ps-4 pt-4 w-min">
+			<div class="flex flex-col p-3">
 				{#each sections as { name, id }}
-					<li type="none">
-						<a href={`#${id}`} class:active={activeSectionId === id}
-							><span
-								class="hover:text-secondary group transition-all duration-300 ease-in-out cursor-pointer text-secondary text-lg"
-							>
-								<button on:click={() => (drawerVisible = !drawerVisible)}>
-									<p
-										class="w-min mx-3 bg-left-bottom bg-gradient-to-r from-border to-border bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-600 ease-out"
-									>
-										{name}
-									</p>
-								</button>
-							</span></a
-						>
-					</li>
+					<a
+						href={`#${id}`}
+						on:click={() => (drawerVisible = false)}
+						class={'px-4 py-3 rounded-md font-mono text-base transition ' +
+							(activeSectionId === id ? 'text-white bg-white/5' : 'text-muted hover:bg-white/5 hover:text-white')}
+					>
+						{name}
+					</a>
 				{/each}
+				<a
+					href="/Akshat.pdf"
+					target="_blank"
+					class="mt-3 px-4 py-3 rounded-md surface text-soft inline-flex items-center gap-2"
+				>
+					<Icon icon="mdi:file-document-outline" /> Resume
+				</a>
 			</div>
 		</div>
 	{/if}
@@ -77,15 +82,18 @@
 
 <style>
 	.drawer {
-		background: #000;
+		background: rgba(5, 5, 5, 0.96);
+		backdrop-filter: blur(18px);
+		-webkit-backdrop-filter: blur(18px);
 		position: absolute;
 		top: 0;
 		right: 0;
 		display: flex;
 		height: 100vh;
 		width: 80%;
+		max-width: 320px;
 		opacity: 1;
 		overflow: hidden;
-		border-left: 1px solid green;
+		border-left: 1px solid rgba(255, 255, 255, 0.06);
 	}
 </style>

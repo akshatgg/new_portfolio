@@ -1,68 +1,88 @@
 <script>
-	import Saos from 'saos';
-	import { flip } from 'svelte/animate';
-	import { quintOut } from 'svelte/easing';
-	let techs = [
+	import Icon from '@iconify/svelte';
+
+	const techs = [
 		{
 			name: 'Frontend',
-			image:"/assests/frontend.webp",
-			about:
-				'I enjoy creating visually appealing and user-friendly interfaces.',
-			tech: ['Particle JS', 'REACT JS', 'NEXT JS', 'Angular', 'TAILWIND CSS']
+			icon: 'mdi:monitor-dashboard',
+			about: 'Pixel-precise interfaces that load fast.',
+			tech: ['React', 'Next.js', 'TypeScript', 'TailwindCSS', 'Material UI', 'RxJS']
 		},
 		{
-			name: 'Backend',
-			image:"/assests/backend.webp",
-			about:
-				'I enjoy solving complex problems through robust and scalable server-side solutions.',
-			tech: ['NODE JS', 'EXPRESS JS', 'FastAPI', 'MONGO DB', 'MYSQL', 'PostgreSQL', 'Prisma' ,'IndexedDB']
-		},
-		{
-			name: 'DevOps',
-			image:"/assests/devops.webp",
-			about:
-				'I prioritize quick product development and streamlined maintenance for existing deployments.',
-			tech: ['GIT', 'DOCKER', 'hpanel', 'AWS', 'GCP' ]
+			name: 'Backend & Systems',
+			icon: 'mdi:server-network',
+			about: 'APIs and async pipelines built to fail gracefully.',
+			tech: ['FastAPI', 'Node.js', 'Express', 'Python', 'Java', 'PostgreSQL', 'MongoDB', 'Prisma', 'Redis', 'ClickHouse']
 		},
 		{
 			name: 'Observability',
-			image:"/assests/observability.webp",
-			about:
-				'I build unified monitoring and alerting pipelines to keep distributed systems reliable at scale.',
-			tech: ['New Relic', 'Datadog', 'Grafana', 'Prometheus', 'CloudWatch', 'OpenTelemetry']
+			icon: 'mdi:radar',
+			about: 'Knowing where the bytes hurt before users do.',
+			tech: ['Prometheus', 'Grafana', 'Datadog', 'New Relic', 'OpenTelemetry', 'AWS CloudWatch', 'Loki', 'Tempo', 'Signoz']
+		},
+		{
+			name: 'DevOps & Cloud',
+			icon: 'mdi:cloud-outline',
+			about: 'Reliable deploys, lean pipelines, sane infra.',
+			tech: ['Docker', 'Kubernetes', 'AWS', 'GCP', 'Git', 'GitHub Apps', 'CI/CD', 'OAuth 2.0', 'JWT', 'WebSocket']
 		}
+	];
+
+	const marquee = [
+		'FastAPI', 'ClickHouse', 'Redis', 'PostgreSQL', 'Prometheus', 'Grafana',
+		'OpenTelemetry', 'Datadog', 'New Relic', 'AWS', 'Docker', 'Kubernetes', 'Next.js',
+		'Python', 'Java', 'TypeScript', 'Node.js', 'MongoDB', 'React'
 	];
 </script>
 
-<section class="grid grid-cols-1 md:grid-cols-2 w-full gap-6 md:gap-8 justify-items-center">
-	{#each techs as tech}
-		<div
-			class="w-full sm:w-10/12 md:w-full bg-slate-800 rounded-xl px-4 md:px-8 py-6 md:py-10 shadow-md shadow-gray-900"
-		>
-			<div class="w-full flex flex-col justify-center items-center pb-3">
-				<img src={tech.image} alt="tech_image" class="w-16 h-16 md:w-24 md:h-24 object-contain" />
-				<p class="text-2xl md:text-3xl font-semibold text-secondary underline mt-4 md:mt-5">{tech.name}</p>
-			</div>
+<div class="w-full flex flex-col gap-10">
+	<section class="grid grid-cols-1 md:grid-cols-2 w-full gap-4">
+		{#each techs as tech}
+			<div class="tech-card relative surface rounded-xl p-6 h-full overflow-hidden group">
+				<!-- subtle green corner glow -->
+				<div class="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-green-400/[0.07] blur-2xl pointer-events-none"></div>
+				<!-- top accent line -->
+				<div class="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-green-400/40 to-transparent"></div>
 
-			<p class="text-center text-secondary-text text-sm md:text-base min-h-0 md:min-h-[60px] lg:min-h-[50px] px-2 md:px-0 py-2 md:py-0">
-				{tech.about}
-			</p>
-			<div class="w-full text-center py-3 md:py-4">
-				<p class="text-xl md:text-2xl font-semibold text-secondary">Technologies</p>
-			</div>
+				<div class="relative flex items-center gap-3 mb-5">
+					<div class="p-2.5 rounded-md bg-green-400/10 border border-green-400/25">
+						<Icon icon={tech.icon} class="text-xl text-green-400" />
+					</div>
+					<div>
+						<p class="text-base md:text-lg font-semibold heading">{tech.name}</p>
+						<p class="text-xs text-muted">{tech.about}</p>
+					</div>
+				</div>
 
-			<div class="w-full flex flex-wrap justify-center items-center gap-2 md:gap-4">
-				{#each tech.tech as t}
-					<button
-						class="border-[1px] border-border px-3 md:px-4 py-1.5 md:py-2 rounded-xl min-w-[90px] md:min-w-[130px] shadow-lg shadow-shadow text-primary-button text-xs md:text-base capitalize"
-						>{t}</button
-					>
-				{/each}
+				<div class="relative flex flex-wrap gap-2">
+					{#each tech.tech as t}
+						<span class="font-mono text-xs md:text-sm px-3 py-1.5 rounded-md bg-green-400/[0.06] border border-green-400/15 text-soft hover:bg-green-400/15 hover:border-green-400/50 hover:text-green-300 transition">
+							{t}
+						</span>
+					{/each}
+				</div>
 			</div>
+		{/each}
+	</section>
+
+	<div class="relative w-full overflow-hidden py-4 mask-fade">
+		<div class="scrolling-row gap-4 whitespace-nowrap text-soft font-mono text-sm md:text-base">
+			{#each [...marquee, ...marquee] as t}
+				<span class="px-5 py-2.5 border border-green-400/15 bg-green-400/[0.04] rounded-lg hover:bg-green-400/15 hover:border-green-400/50 hover:text-green-300 transition">
+					{t}
+				</span>
+			{/each}
 		</div>
-	{/each}
-</section>
+	</div>
+</div>
 
 <style>
-	
+	.tech-card {
+		transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
+	}
+	.tech-card:hover {
+		border-color: rgba(74, 222, 128, 0.3);
+		background: rgba(15, 25, 18, 0.6);
+		transform: translateY(-2px);
+	}
 </style>

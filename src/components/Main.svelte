@@ -6,6 +6,7 @@
 	import About from './About.svelte';
 	import Contact from './Contact.svelte';
 	import Intro from './Intro.svelte';
+	import Experience from './Experience.svelte';
 
 	export let sections = [];
 	export let activeSection;
@@ -43,6 +44,9 @@
 		<section {id} use:inview on:enter={() => handleEnter(id)}>
 			{#if id == 'home'}
 				<Intro />
+			{/if}
+			{#if id == 'experience'}
+				<Experience />
 			{/if}
 			{#if id == 'skills'}
 				<Skills />

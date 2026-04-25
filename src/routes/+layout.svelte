@@ -6,9 +6,11 @@
 	import { onMount } from 'svelte';
 	import { loadSlim } from '@tsparticles/slim';
 	import Main from '../components/Main.svelte';
+	import Icon from '@iconify/svelte';
 
 	let sections = [
 		{ name: 'Home', id: 'home' },
+		{ name: 'Experience', id: 'experience' },
 		{ name: 'Skills', id: 'skills' },
 		{ name: 'Projects', id: 'projects' },
 		{ name: 'About', id: 'about' },
@@ -21,34 +23,46 @@
 
 	onMount(async () => {
 		const module = await import('@tsparticles/svelte');
-
 		ParticlesComponent = module.default;
 	});
 
 	let particlesConfig = {
+		fpsLimit: 60,
 		particles: {
-			color: {
-				value: '#06591e'
-			},
+			color: { value: '#4ade80' },
 			links: {
 				enable: true,
-				color: '#06591e'
+				color: '#1a3a23',
+				opacity: 0.22,
+				distance: 150
 			},
 			move: {
-				enable: true
+				enable: true,
+				speed: 0.45,
+				outModes: { default: 'bounce' }
 			},
 			number: {
-				value: 70
-			}
-		}
+				value: 45,
+				density: { enable: true, area: 1000 }
+			},
+			opacity: { value: 0.3 },
+			size: { value: { min: 0.6, max: 1.8 } }
+		},
+		detectRetina: true
 	};
 
 	void particlesInit(async (engine) => {
 		await loadSlim(engine);
 	});
 
-	let y;
+	let y = 0;
 	let innerHeight = 0;
+
+	$: showBackToTop = y > 600;
+
+	const scrollToTop = () => {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	};
 </script>
 
 <svelte:component this={ParticlesComponent} id="tsparticles" options={particlesConfig} />
@@ -63,5 +77,15 @@
 	</div>
 	<Footer />
 </div>
+
+<!-- back to top -->
+<button
+	on:click={scrollToTop}
+	aria-label="Back to top"
+	class={'fixed bottom-6 right-6 z-50 p-3 rounded-full surface text-soft hover:text-green-400 transition-all duration-300 ' +
+		(showBackToTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none')}
+>
+	<Icon icon="mdi:arrow-up" class="text-xl" />
+</button>
 
 <svelte:window bind:scrollY={y} bind:innerHeight />

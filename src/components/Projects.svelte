@@ -1,18 +1,16 @@
 <script>
 	import Cards from '../cards/Cards.svelte';
+	import { reveal } from '../lib/reveal.js';
 </script>
 
-<section class=" w-full flex flex-col justify-center items-center h-max mt-[64px] md:mt-[80px]">
-	<div class="flex flex-col w-full justify-center items-center">
-		<div>
-			<span
-				class="bg-gradient-to-r from-secondary-left to-indigo-700 text-transparent bg-clip-text text-3xl md:text-5xl uppercase"
-			>
-				<span> &lt;&nbsp;&nbsp;Projects&nbsp;&nbsp;/&gt;</span>
-			</span>
-		</div>
+<section class="section-bg w-full flex flex-col justify-center items-center h-max mt-[64px] md:mt-[80px] px-5 md:px-12 lg:container py-16 md:py-24">
+	<div class="flex flex-col items-center gap-3 mb-12 md:mb-16" use:reveal>
+		<span class="text-[11px] uppercase tracking-[0.3em] text-muted font-mono">// things I've shipped</span>
+		<h2 class="text-3xl md:text-5xl font-bold heading">Projects</h2>
+		<div class="h-px w-16 bg-green-400/60 mt-2"></div>
 	</div>
-	<div class="grid justify-items-center w-full px-3 md:px-8 w-11/12 lg:w-8/12 ">
+
+	<div class="w-full max-w-5xl">
 		<Cards />
 	</div>
 </section>
