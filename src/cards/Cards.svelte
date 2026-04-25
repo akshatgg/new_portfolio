@@ -44,6 +44,7 @@
 				'Interactive 3D solar-system simulator with 8+ celestial bodies, 50+ exoplanets and a physics-based satellite-launch sandbox.',
 			tech: ['Three.js', 'WebGL', 'D3.js', 'Redux'],
 			github: 'https://github.com/akshatgg/OrreyApp',
+			link: 'https://akshatgg.github.io/OrreyApp/',
 			isPrivate: false,
 			category: 'Side Quest'
 		},
