@@ -6,6 +6,12 @@
 	export let y;
 
 	let drawerVisible = false;
+	let docsOpen = false;
+
+	const docs = [
+		{ label: 'Resume', href: '/Akshat.pdf', icon: 'mdi:file-document-outline' },
+		{ label: 'CV', href: '/Akshat_CV.pdf', icon: 'mdi:file-account-outline' }
+	];
 </script>
 
 <div
@@ -32,14 +38,44 @@
 		{/each}
 	</nav>
 
-	<a
-		href="/Akshat.pdf"
-		target="_blank"
-		class="hidden md:inline-flex items-center gap-2 px-4 py-1.5 rounded-md surface surface-hover text-soft text-sm font-mono"
+	<div
+		class="relative hidden md:block"
+		on:mouseenter={() => (docsOpen = true)}
+		on:mouseleave={() => (docsOpen = false)}
+		role="presentation"
 	>
-		<Icon icon="mdi:file-document-outline" class="text-base" />
-		Resume
-	</a>
+		<button
+			on:click={() => (docsOpen = !docsOpen)}
+			class="inline-flex items-center gap-2 px-4 py-1.5 rounded-md surface surface-hover text-soft text-sm font-mono"
+			aria-haspopup="true"
+			aria-expanded={docsOpen}
+		>
+			<Icon icon="mdi:file-document-outline" class="text-base" />
+			Resume
+			<Icon
+				icon="mdi:chevron-down"
+				class={'text-base transition-transform duration-200 ' + (docsOpen ? 'rotate-180' : '')}
+			/>
+		</button>
+
+		{#if docsOpen}
+			<div
+				class="absolute right-0 mt-2 w-44 rounded-md bg-black/90 backdrop-blur-xl border border-white/10 p-1.5 flex flex-col gap-0.5 shadow-xl"
+			>
+				{#each docs as doc}
+					<a
+						href={doc.href}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-2.5 px-3 py-2 rounded text-sm font-mono text-muted hover:text-white hover:bg-white/5 transition"
+					>
+						<Icon icon={doc.icon} class="text-base accent" />
+						{doc.label}
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</div>
 
 	<button
 		on:click={() => (drawerVisible = !drawerVisible)}
@@ -68,13 +104,18 @@
 						{name}
 					</a>
 				{/each}
-				<a
-					href="/Akshat.pdf"
-					target="_blank"
-					class="mt-3 px-4 py-3 rounded-md surface text-soft inline-flex items-center gap-2"
-				>
-					<Icon icon="mdi:file-document-outline" /> Resume
-				</a>
+				<div class="mt-3 flex flex-col gap-2">
+					{#each docs as doc}
+						<a
+							href={doc.href}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="px-4 py-3 rounded-md surface text-soft inline-flex items-center gap-2"
+						>
+							<Icon icon={doc.icon} /> {doc.label}
+						</a>
+					{/each}
+				</div>
 			</div>
 		</div>
 	{/if}

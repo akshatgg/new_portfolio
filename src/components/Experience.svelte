@@ -12,14 +12,14 @@
 			website: 'https://vibemonitor.ai',
 			logo: 'mdi:radar',
 			highlights: [
-				'Built a high-throughput log ingestion platform with custom SDKs in Java, Python and JavaScript, streaming high-volume logs into ClickHouse via async batched pipelines.',
-				'Worked deep with ClickHouse internals — columnar storage, compression, MergeTree engines and partitioning — to design schemas and tune query performance for high-cardinality observability data.',
-				'Designed scalable FastAPI microservices and shipped a unified GitHub App + OAuth integration layer for secure access to repos, commits and PR data.',
-				'Stood up centralized observability across 15+ services — New Relic, Datadog, Grafana, Prometheus, AWS CloudWatch — with RBAC and custom alerting.',
-				'Applied RED & USE methodologies and cut CI/CD build time by 20% across 10+ pipelines with smart caching & artifact reuse.',
-				'Contributed to an automated Root Cause Analysis engine correlating errors with commit history — reducing incident investigation time by 65%.'
+				'Built Beryl, an AI-driven end-to-end test-automation product that crawls a target app from a single URL — including authenticated pages — generates natural-language test cases, converts them into Playwright scripts, and runs them headless to report pass/fail and a site-reliability score.',
+				"Owned Beryl's post-signup execution layer — scaling Playwright runs across a worker pool with self-healing selectors to eliminate flaky tests, plus building its Next.js frontend.",
+				'Built a high-throughput log ingestion platform with custom SDKs in Java, Python and JavaScript that async-batch high-volume logs into ClickHouse, tuned around its columnar engine, compression and binary format.',
+				'Stood up a centralized observability platform unifying AWS CloudWatch, New Relic APM, Datadog, Grafana and Prometheus across 15+ microservices — correlating logs, metrics and traces with RBAC and custom alerting (RED & USE methodologies).',
+				'Built an automated Root Cause Analysis engine on LangGraph that traces incidents through repository commit history — cutting incident investigation time by 65%.',
+				'Ran container orchestration on Kubernetes (Amazon EKS) and improved CI/CD with build caching & artifact reuse — cutting build time 20% across 10+ pipelines.'
 			],
-			tech: ['ClickHouse', 'FastAPI', 'Python', 'Java', 'JavaScript', 'Redis', 'Prometheus', 'Grafana', 'AWS']
+			tech: ['Beryl', 'Playwright', 'ClickHouse', 'FastAPI', 'LangGraph', 'Kubernetes', 'Prometheus', 'Grafana', 'AWS', 'Next.js']
 		},
 		{
 			company: 'iTax Easy',
@@ -76,6 +76,20 @@
 				'Owned product, hiring and the end-to-end technical roadmap.'
 			],
 			tech: ['React', 'MongoDB', 'Express', 'Node.js', 'Material UI']
+		},
+		{
+			company: 'Al-Zira Technology',
+			role: 'Frontend Engineer & Mentor · Internship',
+			period: 'Feb 2024 — Dec 2024',
+			location: 'India',
+			website: '#',
+			logo: 'mdi:palette-outline',
+			highlights: [
+				'Delivered multiple client-facing frontend projects in React at a service-based software company, building responsive, interactive user interfaces.',
+				'Engineered complex, smooth UI animations and motion effects to create polished, engaging experiences across projects.',
+				'Promoted from Engineer to Mentor within ~5–6 months, guiding and reviewing the work of other frontend engineers.'
+			],
+			tech: ['React', 'JavaScript', 'CSS', 'Framer Motion', 'UI/UX']
 		}
 	];
 
