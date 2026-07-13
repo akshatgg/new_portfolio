@@ -68,7 +68,7 @@
 		</div>
 
 		<p class="text-sm sm:text-base md:text-lg text-soft max-w-xl leading-relaxed">
-			I build scalable systems and the observability layer that watches them — high-volume log ingestion pipelines streaming into <span class="text-white">ClickHouse</span>, with a deep grasp of its columnar storage, compression and MergeTree internals. Currently engineering at <a href="https://vibemonitor.ai" target="_blank" rel="noopener" class="accent underline-offset-4 hover:underline">VibeMonitor</a>.
+			I build scalable systems and the observability layer that watches them — high-volume log ingestion pipelines streaming into <span class="text-white">ClickHouse</span>, with a deep grasp of its columnar storage, compression and MergeTree internals. Currently engineering an AI-native DOOH advertising platform at <a href="https://mark-ai.tech/" target="_blank" rel="noopener" class="accent underline-offset-4 hover:underline">Mark AI</a>.
 		</p>
 
 		<div class="flex flex-wrap gap-3 mt-1">

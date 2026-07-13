@@ -6,7 +6,7 @@
 		{ icon: 'mdi:school-outline', label: 'Education', value: 'B.Tech CSE (AI) — KIET, AKTU' },
 		{ icon: 'mdi:map-marker-outline', label: 'Based in', value: 'India · Open to Remote' },
 		{ icon: 'mdi:translate', label: 'Languages', value: 'English · Hindi' },
-		{ icon: 'mdi:lightning-bolt-outline', label: 'Currently', value: 'Software Eng @ VibeMonitor' }
+		{ icon: 'mdi:lightning-bolt-outline', label: 'Currently', value: 'Software Eng @ Mark AI' }
 	];
 
 	const wins = [
@@ -31,7 +31,7 @@
 					I'm a <span class="text-white font-medium">Software Engineer</span> who likes systems that don't fall over. Most of my day is spent on high-volume <span class="text-white">log ingestion pipelines streaming into ClickHouse</span> — designing schemas, tuning MergeTree partitioning, and squeezing every bit of throughput out of columnar storage.
 				</p>
 				<p class="text-base md:text-lg mt-4">
-					Outside the day job at <a href="https://vibemonitor.ai" target="_blank" rel="noopener" class="accent underline-offset-4 hover:underline">VibeMonitor</a>, I've co-founded an edtech startup, freelanced full-stack apps for ride-booking and ad-tech, and built a 3D solar-system simulator just because it sounded fun.
+					Outside the day job at <a href="https://mark-ai.tech/" target="_blank" rel="noopener" class="accent underline-offset-4 hover:underline">Mark AI</a>, I've co-founded an edtech startup, freelanced full-stack apps for ride-booking and ad-tech, and built a 3D solar-system simulator just because it sounded fun.
 				</p>
 				<p class="text-base md:text-lg mt-4 text-muted">
 					Bias toward action. Paranoid about latency. Allergic to flaky tests.

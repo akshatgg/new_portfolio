@@ -5,9 +5,26 @@
 
 	const experiences = [
 		{
+			company: 'Mark AI',
+			role: 'Software Engineer · Full Time',
+			period: 'Jun 2026 — Present',
+			location: 'Remote · India',
+			website: 'https://mark-ai.tech/',
+			logo: 'mdi:billboard',
+			highlights: [
+				'Building an AI-native DOOH advertising platform — leveraging ML-based recommendation models to suggest related and competitor screens to advertisers, improving campaign targeting and screen discovery across 1 Lakh+ digital displays.',
+				'Built an AI booking agent that converts natural-language requests into executable booking scripts, letting advertisers book screens through conversational input instead of manual workflows.',
+				'Own the CMS portal and its connected main site end to end — operators and advertisers manage screen inventory, content, campaign scheduling and payments from a single platform.',
+				'Built a native Android signage-player APK in Kotlin that self-registers to the in-house CMS and streams scheduled content to DOOH displays over a persistent WebSocket connection to the FastAPI backend for real-time playback and remote control.',
+				'Designed an interactive 3D website with Three.js/WebGL using Blender-crafted assets, plus AR previews via MindAR and 3D human models so clients can visualize ads in real-world environments before campaign deployment.',
+				'Deployed the platform on Google Cloud Platform behind a load balancer distributing traffic across instances for reliable, scalable production serving.'
+			],
+			tech: ['FastAPI', 'Python', 'Kotlin', 'React', 'Three.js', 'Blender', 'Hunyuan 3D', 'MindAR', 'WebSocket', 'GCP']
+		},
+		{
 			company: 'VibeMonitor',
 			role: 'Software Engineer · Full Time',
-			period: 'Sep 2025 — Present',
+			period: 'Sep 2025 — Jun 2026',
 			location: 'Remote · India',
 			website: 'https://vibemonitor.ai',
 			logo: 'mdi:radar',
@@ -38,7 +55,7 @@
 		{
 			company: 'Sakhi Women',
 			role: 'Full Stack Developer · Freelance',
-			period: 'Jan 2025 — Feb 2025',
+			period: 'Jan 2026 — Feb 2026',
 			location: 'Remote',
 			website: 'https://www.sakhiwomen.in/',
 			logo: 'mdi:car-multiple',
@@ -52,7 +69,7 @@
 		{
 			company: 'Mark AI',
 			role: 'Full Stack Developer · Freelance',
-			period: 'Dec 2024 — Jan 2025',
+			period: 'Dec 2025 — Jan 2026',
 			location: 'Remote',
 			website: 'https://mark-ai.tech/',
 			logo: 'mdi:billboard',
