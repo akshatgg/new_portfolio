@@ -7,12 +7,28 @@
 
 	let drawerVisible = false;
 	let docsOpen = false;
+	let docsWrapper;
 
 	const docs = [
 		{ label: 'Resume', href: '/Akshat.pdf', icon: 'mdi:file-document-outline' },
 		{ label: 'CV', href: '/Akshat_CV.pdf', icon: 'mdi:file-account-outline' }
 	];
+
+	// Hover only for real mice — on touch, a tap fires emulated mouse events that
+	// would open the menu and instantly toggle it closed again.
+	const openOnHover = (e) => {
+		if (e.pointerType === 'mouse') docsOpen = true;
+	};
+	const closeOnHover = (e) => {
+		if (e.pointerType === 'mouse') docsOpen = false;
+	};
+
+	const onWindowPointerDown = (e) => {
+		if (docsOpen && docsWrapper && !docsWrapper.contains(e.target)) docsOpen = false;
+	};
 </script>
+
+<svelte:window on:pointerdown={onWindowPointerDown} />
 
 <div
 	class={'fixed z-50 w-full h-16 md:h-20 text-white flex justify-between items-center px-5 md:px-12 transition-all duration-300 ' +
@@ -38,52 +54,59 @@
 		{/each}
 	</nav>
 
-	<div
-		class="relative hidden md:block"
-		on:mouseenter={() => (docsOpen = true)}
-		on:mouseleave={() => (docsOpen = false)}
-		role="presentation"
-	>
-		<button
-			on:click={() => (docsOpen = !docsOpen)}
-			class="inline-flex items-center gap-2 px-4 py-1.5 rounded-md surface surface-hover text-soft text-sm font-mono"
-			aria-haspopup="true"
-			aria-expanded={docsOpen}
+	<div class="flex items-center gap-2">
+		<div
+			class="relative"
+			bind:this={docsWrapper}
+			on:pointerenter={openOnHover}
+			on:pointerleave={closeOnHover}
+			role="presentation"
 		>
-			<Icon icon="mdi:file-document-outline" class="text-base" />
-			Resume
-			<Icon
-				icon="mdi:chevron-down"
-				class={'text-base transition-transform duration-200 ' + (docsOpen ? 'rotate-180' : '')}
-			/>
-		</button>
-
-		{#if docsOpen}
-			<div
-				class="absolute right-0 mt-2 w-44 rounded-md bg-black/90 backdrop-blur-xl border border-white/10 p-1.5 flex flex-col gap-0.5 shadow-xl"
+			<button
+				on:click={() => (docsOpen = !docsOpen)}
+				class="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-md surface surface-hover text-soft text-sm font-mono"
+				aria-haspopup="true"
+				aria-expanded={docsOpen}
 			>
-				{#each docs as doc}
-					<a
-						href={doc.href}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="flex items-center gap-2.5 px-3 py-2 rounded text-sm font-mono text-muted hover:text-white hover:bg-white/5 transition"
-					>
-						<Icon icon={doc.icon} class="text-base accent" />
-						{doc.label}
-					</a>
-				{/each}
-			</div>
-		{/if}
-	</div>
+				<Icon icon="mdi:file-document-outline" class="text-base" />
+				Resume
+				<Icon
+					icon="mdi:chevron-down"
+					class={'text-base transition-transform duration-200 ' + (docsOpen ? 'rotate-180' : '')}
+				/>
+			</button>
 
-	<button
-		on:click={() => (drawerVisible = !drawerVisible)}
-		class="md:hidden flex p-2 rounded-md surface text-soft"
-		aria-label="Open menu"
-	>
-		<Icon icon={drawerVisible ? 'mdi:close' : 'mdi:menu'} class="text-xl" />
-	</button>
+			{#if docsOpen}
+				<!-- pt-2 (padding, not margin) keeps the gap hoverable so the menu survives the mouse travel -->
+				<div class="absolute right-0 top-full pt-2 w-44 z-50">
+					<div
+						class="rounded-md bg-black/90 backdrop-blur-xl border border-white/10 p-1.5 flex flex-col gap-0.5 shadow-xl"
+					>
+						{#each docs as doc}
+							<a
+								href={doc.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								on:click={() => (docsOpen = false)}
+								class="flex items-center gap-2.5 px-3 py-2.5 rounded text-sm font-mono text-muted hover:text-white hover:bg-white/5 transition"
+							>
+								<Icon icon={doc.icon} class="text-base accent" />
+								{doc.label}
+							</a>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<button
+			on:click={() => (drawerVisible = !drawerVisible)}
+			class="md:hidden flex p-2 rounded-md surface text-soft"
+			aria-label="Open menu"
+		>
+			<Icon icon={drawerVisible ? 'mdi:close' : 'mdi:menu'} class="text-xl" />
+		</button>
+	</div>
 
 	{#if drawerVisible}
 		<div class="drawer flex flex-col">
