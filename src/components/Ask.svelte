@@ -324,7 +324,7 @@
 	role="presentation"
 ></div>
 
-<div class="ask-surface" class:closed={$askClosed} style={surfaceGeometry}>
+<div class="ask-surface" class:expanded class:closed={$askClosed} style={surfaceGeometry}>
 	<!-- chrome -->
 	<div class="ask-chrome">
 		<div class="lights">
@@ -505,6 +505,10 @@
 </div>
 
 <style>
+	.ask-surface.expanded {
+		z-index: 100;
+	}
+
 	.ask-backdrop {
 		position: fixed;
 		inset: 0;
@@ -522,7 +526,12 @@
 
 	.ask-surface {
 		position: fixed;
-		z-index: 100;
+		/* Docked, this is a hero element, so the header and any menu it drops must
+		   sit above it — at 100 the panel swallowed the Resume/CV dropdown.
+		   Expanded it becomes a full-screen overlay and has to cover the header
+		   instead, which is why the two states can't share one z-index.
+		   The header wrapper is a flex item at z-50, so 40 and 100 straddle it. */
+		z-index: 40;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -808,20 +817,25 @@
 		color: rgba(231, 231, 231, 0.86);
 		text-wrap: pretty;
 	}
-	.assistant-text p {
+	/* This subtree is injected with {@html}, so its elements never receive
+	   Svelte's scoping class. Plain descendant selectors compile to
+	   `.assistant-text.svelte-x p.svelte-x`, match nothing, and get pruned as
+	   unused — the rules ship dead and the markdown renders bare. Every selector
+	   below the container must therefore be :global(). */
+	.assistant-text :global(p) {
 		margin: 0 0 0.8em;
 	}
-	.assistant-text p:last-child {
+	.assistant-text :global(p:last-child) {
 		margin-bottom: 0;
 	}
-	.assistant-text strong {
+	.assistant-text :global(strong) {
 		color: #e7e7e7;
 		font-weight: 600;
 	}
-	.assistant-text em {
+	.assistant-text :global(em) {
 		font-style: italic;
 	}
-	.assistant-text code {
+	.assistant-text :global(code) {
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
 		font-size: 0.88em;
 		padding: 1px 5px;
@@ -831,37 +845,37 @@
 		color: #4ade80;
 		word-break: break-word;
 	}
-	.assistant-text a {
+	.assistant-text :global(a) {
 		color: #4ade80;
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
-	.assistant-text .md-h {
+	.assistant-text :global(.md-h) {
 		color: #e7e7e7;
 		font-weight: 600;
 		margin: 0 0 0.5em;
 	}
-	.assistant-text ul,
-	.assistant-text ol {
+	.assistant-text :global(ul),
+	.assistant-text :global(ol) {
 		margin: 0 0 0.8em;
-		padding-left: 1.25em;
 		display: flex;
 		flex-direction: column;
 		gap: 0.4em;
 	}
-	.assistant-text ul {
+	.assistant-text :global(ul) {
 		list-style: none;
 		padding-left: 0.15em;
 	}
-	.assistant-text ol {
+	.assistant-text :global(ol) {
 		list-style: decimal;
+		padding-left: 1.25em;
 	}
-	.assistant-text li {
+	.assistant-text :global(li) {
 		padding-left: 1em;
 		position: relative;
 	}
 	/* A dot drawn rather than a list marker, so it can take the accent colour. */
-	.assistant-text ul > li::before {
+	.assistant-text :global(ul > li::before) {
 		content: '';
 		position: absolute;
 		left: 0.1em;
@@ -872,11 +886,11 @@
 		background: #4ade80;
 		opacity: 0.65;
 	}
-	.assistant-text ol > li {
+	.assistant-text :global(ol > li) {
 		padding-left: 0.2em;
 	}
-	.assistant-text ul:last-child,
-	.assistant-text ol:last-child {
+	.assistant-text :global(ul:last-child),
+	.assistant-text :global(ol:last-child) {
 		margin-bottom: 0;
 	}
 
