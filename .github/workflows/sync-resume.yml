@@ -1,0 +1,126 @@
+name: Sync résumé & CV
+
+# Keeps the chat agent's copies of the résumé and CV in step with the ones the
+# website serves, and proves the agent can still read them afterwards.
+#
+# static/Akshat.pdf     → backend/data/docs/resume.pdf
+# static/Akshat_CV.pdf  → backend/data/docs/cv.pdf
+#
+# The duplication exists because the Vercel backend project has Root Directory
+# `backend`, so its function cannot read anything above that folder.
+#
+# Two ways to trigger:
+#
+#   1. Upload on github.com — open the `static` folder, "Add file" →
+#      "Upload files", drop the PDF in, commit. This workflow does the rest.
+#      (GitHub Actions has no file-upload input, so this is the upload path.)
+#
+#   2. Run it manually from the Actions tab with a direct download URL, for a
+#      file hosted somewhere else.
+
+on:
+  push:
+    paths:
+      - 'static/Akshat.pdf'
+      - 'static/Akshat_CV.pdf'
+  workflow_dispatch:
+    inputs:
+      resume_url:
+        description: 'Direct download URL for the one-page résumé (optional)'
+        required: false
+        type: string
+      cv_url:
+        description: 'Direct download URL for the long-form CV (optional)'
+        required: false
+        type: string
+
+# Two uploads in quick succession should not race each other into the same file.
+concurrency:
+  group: sync-resume
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch from URLs (manual runs only)
+        if: inputs.resume_url != '' || inputs.cv_url != ''
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.resume_url }}" ]; then
+            echo "Downloading résumé…"
+            curl -fsSL --max-time 60 -o static/Akshat.pdf "${{ inputs.resume_url }}"
+          fi
+          if [ -n "${{ inputs.cv_url }}" ]; then
+            echo "Downloading CV…"
+            curl -fsSL --max-time 60 -o static/Akshat_CV.pdf "${{ inputs.cv_url }}"
+          fi
+
+      - name: Check the files are real PDFs
+        run: |
+          set -euo pipefail
+          for f in static/Akshat.pdf static/Akshat_CV.pdf; do
+            [ -f "$f" ] || { echo "::error::$f is missing"; exit 1; }
+            # A truncated or HTML-error-page download is the likely failure here,
+            # and both are caught by the magic bytes.
+            head -c 4 "$f" | grep -q '%PDF' || { echo "::error::$f is not a PDF"; exit 1; }
+            size=$(wc -c < "$f")
+            [ "$size" -gt 10000 ] || { echo "::error::$f is only $size bytes — suspiciously small"; exit 1; }
+            echo "ok: $f ($size bytes)"
+          done
+
+      - name: Copy into the agent's document folder
+        run: |
+          set -euo pipefail
+          mkdir -p backend/data/docs
+          cp static/Akshat.pdf    backend/data/docs/resume.pdf
+          cp static/Akshat_CV.pdf backend/data/docs/cv.pdf
+
+      - name: Commit if anything changed
+        id: commit
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add static/Akshat.pdf static/Akshat_CV.pdf backend/data/docs/
+
+          if git diff --cached --quiet; then
+            echo "No change — the agent's copies already match."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore: sync résumé & CV to the chat agent"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The push above triggers the Vercel backend deploy. Once it lands,
+      # /api/health re-extracts both PDFs — so this both waits for the deploy
+      # and proves the new files are actually readable by the agent.
+      - name: Verify the agent can read them
+        if: steps.commit.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          URL="https://portfolio-backend-virid-seven.vercel.app/api/health"
+          echo "Waiting for the backend to redeploy…"
+          sleep 60
+
+          for attempt in $(seq 1 10); do
+            body=$(curl -fsS --max-time 20 "$URL" || echo '{}')
+            ok=$(echo "$body" | jq -r '.documents.ok // false')
+            if [ "$ok" = "true" ]; then
+              echo "$body" | jq '{documents, confluence, mode}'
+              echo "Agent extracted both documents successfully."
+              exit 0
+            fi
+            echo "attempt $attempt: not ready yet"
+            sleep 15
+          done
+
+          echo "::error::The deployed agent could not extract the documents."
+          curl -fsS "$URL" | jq . || true
+          exit 1
