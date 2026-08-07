@@ -20,7 +20,6 @@
 	let latency = 0;
 	let tokens = 0;
 	let elapsed = 0;
-	let vw = 1440;
 
 	let scrollEl;
 	let inputEl;
@@ -103,6 +102,7 @@
 		tokens = 0;
 		elapsed = 0;
 		persistTurn(userMsg);
+		scrollToLatest();
 		if (inputEl) inputEl.style.height = 'auto';
 
 		const t0 = performance.now();
@@ -152,6 +152,7 @@
 		latency = Math.round(performance.now() - t0);
 		phase = 'speaking';
 		messages = [...messages, { role: 'assistant', content: '', streaming: true }];
+		scrollToLatest();
 	}
 
 	function updateAssistant(text) {
@@ -160,6 +161,7 @@
 		next[next.length - 1] = { ...next[next.length - 1], content: text };
 		messages = next;
 		tokens = Math.round(text.length / 3.7);
+		scrollToLatest();
 	}
 
 	function finishAssistant(text, t0) {
@@ -233,15 +235,12 @@
 	}
 
 	// Follow the transcript, but never yank the empty-state greeting out of view.
-	$: if (scrollEl && messages.length) {
-		tick().then(() => (scrollEl.scrollTop = scrollEl.scrollHeight));
+	function scrollToLatest() {
+		if (!scrollEl || !messages.length) return;
+		tick().then(() => scrollEl && (scrollEl.scrollTop = scrollEl.scrollHeight));
 	}
 
 	onMount(() => {
-		vw = window.innerWidth;
-		const onResize = () => (vw = window.innerWidth);
-		window.addEventListener('resize', onResize);
-
 		loadTurns().then((turns) => {
 			if (turns.length) messages = turns.map((t) => ({ ...t, streaming: false }));
 		});
@@ -251,14 +250,10 @@
 		measure();
 		window.addEventListener('scroll', measure, { passive: true });
 		window.addEventListener('resize', measure);
-		const ro = window.ResizeObserver ? new ResizeObserver(measure) : null;
-		if ($dockEl) ro?.observe($dockEl);
 
 		return () => {
-			window.removeEventListener('resize', onResize);
 			window.removeEventListener('scroll', measure);
 			window.removeEventListener('resize', measure);
-			ro?.disconnect();
 		};
 	});
 

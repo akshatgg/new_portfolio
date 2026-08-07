@@ -42,12 +42,6 @@
 	onMount(() => tick());
 	onDestroy(() => clearTimeout(timer));
 
-	const stats = [
-		{ value: '15+', label: 'Microservices monitored' },
-		{ value: '65%', label: 'Faster RCA' },
-		{ value: '1.5k+', label: 'Concurrent users' },
-		{ value: '3+', label: 'Years building' }
-	];
 </script>
 
 <section class="section-bg relative grid grid-cols-1 lg:grid-cols-2 px-6 gap-10 lg:gap-14 min-h-[calc(100vh-80px)] mt-[64px] lg:mt-[80px] items-center">
@@ -113,24 +107,6 @@
 				</button>
 			{/if}
 		</div>
-
-		<div class="grid grid-cols-2 gap-3 w-full max-w-md">
-			{#each stats as s}
-				<div class="surface surface-hover rounded-lg p-3.5">
-					<div class="text-2xl font-bold font-mono heading">{s.value}</div>
-					<div class="text-[11px] text-muted mt-1 uppercase tracking-wider">{s.label}</div>
-				</div>
-			{/each}
-		</div>
-	</div>
-
-	<div class="lg:hidden grid grid-cols-2 gap-3 w-full">
-		{#each stats as s}
-			<div class="surface rounded-lg p-3">
-				<div class="text-xl font-bold font-mono heading">{s.value}</div>
-				<div class="text-[11px] text-muted mt-1 uppercase tracking-wider">{s.label}</div>
-			</div>
-		{/each}
 	</div>
 
 	<!-- scroll-down hint -->
@@ -145,9 +121,9 @@
 <style>
 	.ask-slot {
 		width: 100%;
-		max-width: 448px;
-		height: 560px;
-		max-height: 62vh;
+		max-width: 560px;
+		height: 700px;
+		max-height: 80vh;
 		position: relative;
 	}
 	.ask-reopen {

@@ -19,7 +19,7 @@ export function mountOrb(host, getPhase, opts = {}) {
 
 	const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 	renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-	renderer.setSize(w, h);
+	renderer.setSize(w, h, false);
 	renderer.setClearColor(0x000000, 0);
 	host.appendChild(renderer.domElement);
 	renderer.domElement.style.width = '100%';
@@ -123,7 +123,7 @@ export function mountOrb(host, getPhase, opts = {}) {
 		if (!s.w || !s.h) return;
 		w = s.w;
 		h = s.h;
-		renderer.setSize(w, h);
+		renderer.setSize(w, h, false);
 		camera.aspect = w / h;
 		camera.updateProjectionMatrix();
 		uniforms.uScale.value = Math.min(1, h / 340);
@@ -146,20 +146,6 @@ export function mountOrb(host, getPhase, opts = {}) {
 	const loop = () => {
 		if (!running) return;
 		const phase = getPhase();
-
-		// The panel animates between docked and full-screen, so its box changes
-		// every frame during the transition — re-fit rather than relying on the
-		// observer, which fires too late to look right.
-		const cw = host.clientWidth;
-		const ch = host.clientHeight;
-		if (cw > 0 && ch > 0 && (cw !== w || ch !== h)) {
-			w = cw;
-			h = ch;
-			renderer.setSize(w, h);
-			camera.aspect = w / h;
-			camera.updateProjectionMatrix();
-			uniforms.uScale.value = Math.min(1, h / 340);
-		}
 
 		t += 0.016;
 		energy += ((energyFor[phase] ?? 0.06) - energy) * 0.06;

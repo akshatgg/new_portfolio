@@ -7,6 +7,7 @@
 	import { loadSlim } from '@tsparticles/slim';
 	import Main from '../components/Main.svelte';
 	import Icon from '@iconify/svelte';
+	import Ask from '../components/Ask.svelte';
 
 	let sections = [
 		{ name: 'Home', id: 'home' },
@@ -77,6 +78,12 @@
 	</div>
 	<Footer />
 </div>
+
+<!-- The ASK panel must live at the layout root. The content wrapper above is a
+     flex item with `z-20`, which creates a stacking context — anything nested
+     inside it is capped at that level and would render *under* the z-50 header
+     when expanded, however high its own z-index. -->
+<Ask />
 
 <!-- back to top -->
 <button

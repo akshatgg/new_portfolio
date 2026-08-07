@@ -18,7 +18,9 @@ const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 10);
 
 // Bound on the agent loop. Each round is a model call plus its tool calls, so
 // this caps both latency and spend if the model ever fails to converge.
-const MAX_TOOL_ROUNDS = 4;
+// list_documents → search → read → read is four rounds on its own, so the cap
+// has to leave room for a fifth round that actually answers.
+const MAX_TOOL_ROUNDS = 6;
 
 // Guardrails on what a client may send. The browser holds conversation history
 // in IndexedDB and replays it on every request, so these caps also bound how
@@ -178,11 +180,27 @@ export async function POST(request: Request) {
           contents.push({ role: 'user', parts: responses as Part[] });
         }
 
-        // Fell out of the loop still wanting tools.
-        send(
-          "\n\nI wasn't able to pull that together — try asking something more specific, " +
-            'or reach Akshat at akshatg9636@gmail.com.',
-        );
+        // Out of rounds and still reaching for tools. Rather than apologising, ask
+        // once more with no tools available — it has plenty of retrieved context
+        // by now and just needs to be made to commit to an answer.
+        const forced = await genai().models.generateContentStream({
+          model: MODEL,
+          contents,
+          config: {
+            systemInstruction:
+              buildSystemInstruction() +
+              '\n\nYou have gathered enough. Answer now from what you have retrieved. ' +
+              'Do not request anything further.',
+            maxOutputTokens: 1_200,
+            temperature: 0.7,
+          },
+        });
+
+        for await (const chunk of forced) {
+          for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+            if (part.text) send(part.text);
+          }
+        }
       } catch (error) {
         console.error('[chat] failed:', error);
         // Headers are already sent, so the status cannot change; surface the
