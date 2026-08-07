@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<!-- Assets referenced only as strings in the logic class, so the bundler cannot
+     discover them from markup. Declared here; read back from window.__resources. -->
+<meta name="ext-resource-dependency" content="static/assests/hall.png" data-resource-id="img_vibemonitor" />
+<meta name="ext-resource-dependency" content="static/assests/itax.png" data-resource-id="img_itax" />
+<meta name="ext-resource-dependency" content="static/assests/Elibrary.png" data-resource-id="img_elibrary" />
+<meta name="ext-resource-dependency" content="static/assests/Cosmic.png" data-resource-id="img_cosmic" />
+<meta name="ext-resource-dependency" content="static/assests/prep.png" data-resource-id="img_prep" />
+<meta name="ext-resource-dependency" content="static/assests/anti.png" data-resource-id="img_anti" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js" data-resource-id="three" />
+<template id="__bundler_thumbnail" data-bg-color="#050505">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+    <rect width="120" height="120" fill="#050505"></rect>
+    <circle cx="60" cy="60" r="22" fill="none" stroke="#4ade80" stroke-width="2"></circle>
+    <circle cx="60" cy="60" r="6" fill="#4ade80"></circle>
+  </svg>
+</template>
+<style>
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+  body { margin: 0; overflow-x: hidden; background-color: #050505; color: #e7e7e7;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  ::selection { background: rgba(34,197,94,0.25); color: #f0fdf4; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #050505; }
+  ::-webkit-scrollbar-thumb { background: rgba(34,197,94,0.35); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(34,197,94,0.6); }
+  a { color: #4ade80; text-decoration: none; }
+  a:hover { color: #86efac; }
+  p { margin: 0; }
+  h1, h2, h3 { margin: 0; font-weight: inherit; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  textarea, input, button { font-family: inherit; }
+  @keyframes caret { 50% { opacity: 0; } }
+  @keyframes scroll-row { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes scroll-pulse { 0% { transform: translateY(-100%); } 100% { transform: translateY(200%); } }
+  @keyframes om-ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+  @keyframes ask-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes ask-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes ask-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+</style>
+</helmet>
+
+<div style="position: relative; width: 100%; background: #050505; min-height: 100vh; letter-spacing: 0.05em;">
+
+  <canvas ref="{{ particlesRef }}" style="position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;"></canvas>
+
+  <div style="position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column;">
+
+    <div style="{{ headerStyle }}">
+      <a href="#home" style="font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace; font-size: clamp(16px, 1.2vw, 18px); display: flex; align-items: center; gap: 6px;">
+        <span style="color: #4ade80;">~/</span>
+        <span style="color: rgba(231,231,231,0.78);" style-hover="color: #fff;">akshat</span>
+      </a>
+
+      <nav style="{{ navStyle }}">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="6">
+          <a href="{{ item.href }}" style="{{ item.style }}">
+            {{ item.name }}
+            <sc-if value="{{ item.active }}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; left: 14px; right: 14px; bottom: -2px; height: 1px; background: #4ade80;"></span>
+            </sc-if>
+          </a>
+        </sc-for>
+      </nav>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button onClick="{{ expand }}" aria-label="Ask my AI" title="Ask my AI" style="{{ askPillStyle }}" style-hover="background: rgba(74,222,128,0.18); border-color: rgba(74,222,128,0.6); color: #86efac;">
+          <span style="position: relative; display: flex; height: 7px; width: 7px;">
+            <span style="position: absolute; display: inline-flex; height: 100%; width: 100%; border-radius: 9999px; background: #4ade80; opacity: 0.6; animation: om-ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
+            <span style="position: relative; display: inline-flex; border-radius: 9999px; height: 7px; width: 7px; background: #4ade80;"></span>
+          </span>
+          <iconify-icon icon="mage:message-dots-round" style="font-size: 16px;"></iconify-icon>
+          <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span>Ask my AI</span></sc-if>
+        </button>
+
+        <div style="{{ docsWrapStyle }}" onMouseEnter="{{ openDocs }}" onMouseLeave="{{ closeDocs }}">
+          <button onClick="{{ toggleDocs }}" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 6px; background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); color: rgba(231,231,231,0.78); font-size: 14px; font-family: 'JetBrains Mono', ui-monospace, monospace; cursor: pointer; transition: border-color .25s ease, background-color .25s ease;" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.7);">
+            <iconify-icon icon="mdi:file-document-outline" style="font-size: 16px;"></iconify-icon>
+            Resume
+            <iconify-icon icon="mdi:chevron-down" style="{{ chevronStyle }}"></iconify-icon>
+          </button>
+          <sc-if value="{{ docsOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; right: 0; top: 100%; padding-top: 8px; width: 176px; z-index: 50;">
+              <div style="border-radius: 6px; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+                <a href="/Akshat.pdf" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 4px; font-size: 14px; font-family: 'JetBrains Mono', ui-monospace, monospace; color: rgba(231,231,231,0.55);" style-hover="color: #fff; background: rgba(255,255,255,0.05);">
+                  <iconify-icon icon="mdi:file-document-outline" style="font-size: 16px; color: #4ade80;"></iconify-icon>Resume
+                </a>
+                <a href="/Akshat_CV.pdf" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 4px; font-size: 14px; font-family: 'JetBrains Mono', ui-monospace, monospace; color: rgba(231,231,231,0.55);" style-hover="color: #fff; background: rgba(255,255,255,0.05);">
+                  <iconify-icon icon="mdi:file-account-outline" style="font-size: 16px; color: #4ade80;"></iconify-icon>CV
+                </a>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ toggleDrawer }}" aria-label="Open menu" style="display: flex; padding: 8px; border-radius: 6px; background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); color: rgba(231,231,231,0.78); cursor: pointer;">
+            <iconify-icon icon="{{ menuIcon }}" style="font-size: 20px;"></iconify-icon>
+          </button>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="background: rgba(5,5,5,0.96); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); position: absolute; top: 0; right: 0; display: flex; flex-direction: column; height: 100vh; width: 80%; max-width: 320px; overflow: hidden; border-left: 1px solid rgba(255,255,255,0.06);">
+          <div style="height: 64px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 0 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
+            <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; color: rgba(231,231,231,0.78); font-size: 14px;">menu</span>
+            <button onClick="{{ toggleDrawer }}" aria-label="Close" style="background: transparent; border: none; cursor: pointer; display: flex; color: rgba(231,231,231,0.78);">
+              <iconify-icon icon="mdi:close" style="font-size: 20px;"></iconify-icon>
+            </button>
+          </div>
+          <div style="display: flex; flex-direction: column; padding: 12px;">
+            <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="6">
+              <a href="{{ item.href }}" onClick="{{ closeDrawer }}" style="{{ item.drawerStyle }}">{{ item.name }}</a>
+            </sc-for>
+            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <button onClick="{{ askFromDrawer }}" style="padding: 12px 16px; border-radius: 6px; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; cursor: pointer; text-align: left;">
+                <iconify-icon icon="mage:message-dots-round" style="font-size: 18px;"></iconify-icon> Ask my AI
+              </button>
+              <a href="/Akshat.pdf" target="_blank" rel="noopener noreferrer" style="padding: 12px 16px; border-radius: 6px; background: rgba(10,10,10,0.6); border: 1px solid rgba(255,255,255,0.06); color: rgba(231,231,231,0.78); display: inline-flex; align-items: center; gap: 8px;">
+                <iconify-icon icon="mdi:file-document-outline"></iconify-icon> Resume
+              </a>
+              <a href="/Akshat_CV.pdf" target="_blank" rel="noopener noreferrer" style="padding: 12px 16px; border-radius: 6px; background: rgba(10,10,10,0.6); border: 1px solid rgba(255,255,255,0.06); color: rgba(231,231,231,0.78); display: inline-flex; align-items: center; gap: 8px;">
+                <iconify-icon icon="mdi:file-account-outline"></iconify-icon> CV
+              </a>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <main style="display: flex; flex: 1 1 0%; flex-direction: column; justify-content: center; align-items: center; width: 100%;">
+
+      <section id="home" data-screen-label="Home" style="width: 100%; background-image: radial-gradient(60% 50% at 50% 0%, rgba(34,197,94,0.05), transparent 70%); position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 0 24px; gap: 56px; min-height: calc(100vh - 80px); margin-top: 80px; align-items: center; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; gap: 24px; padding: 0 24px; z-index: 10; max-width: 672px;">
+          <div style="display: flex; align-items: center; gap: 8px; background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 9999px; padding: 4px 14px 4px 8px; font-size: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace;">
+            <span style="position: relative; display: flex; height: 8px; width: 8px;">
+              <span style="position: absolute; display: inline-flex; height: 100%; width: 100%; border-radius: 9999px; background: #4ade80; opacity: 0.6; animation: om-ping 1s cubic-bezier(0,0,0.2,1) infinite;"></span>
+              <span style="position: relative; display: inline-flex; border-radius: 9999px; height: 8px; width: 8px; background: #4ade80;"></span>
+            </span>
+            <span style="color: rgba(231,231,231,0.78);">Available for new opportunities</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; color: rgba(231,231,231,0.55);">$ whoami</span>
+            <h1 style="font-size: clamp(36px, 5vw, 72px); font-weight: 700; line-height: 1.05; color: #f5f5f5; letter-spacing: -0.02em;">
+              Akshat <span style="color: #4ade80;">Gupta.</span>
+            </h1>
+            <div style="font-size: clamp(16px, 1.4vw, 20px); font-family: 'JetBrains Mono', ui-monospace, monospace; margin-top: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: rgba(231,231,231,0.78);">
+              <span style="color: #4ade80;">&gt;</span>
+              <span style="min-height: 1.5em; display: inline-block;">{{ typed }}<span style="margin-left: 2px; color: #4ade80; animation: caret 1.1s step-end infinite;">|</span></span>
+            </div>
+          </div>
+
+          <p style="font-size: clamp(14px, 1.1vw, 18px); color: rgba(231,231,231,0.78); max-width: 576px; line-height: 1.625; text-wrap: pretty;">
+            I build scalable systems and the observability layer that watches them — high-volume log ingestion pipelines streaming into <span style="color: #fff;">ClickHouse</span>, with a deep grasp of its columnar storage, compression and MergeTree internals. Currently engineering an AI-native DOOH advertising platform at <a href="https://mark-ai.tech/" target="_blank" rel="noopener" style="color: #4ade80; text-underline-offset: 4px;" style-hover="text-decoration: underline;">Mark AI</a>.
+          </p>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px;">
+            <a href="#contact" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 6px; background: #4ade80; color: #000; font-weight: 500; transition: background-color .2s;" style-hover="background: #86efac; color: #000;">
+              <iconify-icon icon="mage:message-dots-round" style="font-size: 18px;"></iconify-icon>Get in touch
+            </a>
+            <a href="/Akshat.pdf" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 6px; background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); color: rgba(231,231,231,0.78); transition: border-color .25s, background-color .25s;" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.7); color: rgba(231,231,231,0.78);">
+              <iconify-icon icon="mdi:file-document-outline" style="font-size: 18px;"></iconify-icon>Resume
+            </a>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 16px; padding-top: 12px; color: rgba(231,231,231,0.55);">
+            <a href="https://github.com/akshatgg" target="_blank" rel="noopener" aria-label="GitHub" style="color: rgba(231,231,231,0.55); transition: color .2s;" style-hover="color: #fff;"><iconify-icon icon="mdi:github" style="font-size: 20px;"></iconify-icon></a>
+            <a href="https://www.linkedin.com/in/akshatgg/" target="_blank" rel="noopener" aria-label="LinkedIn" style="color: rgba(231,231,231,0.55); transition: color .2s;" style-hover="color: #fff;"><iconify-icon icon="mdi:linkedin" style="font-size: 20px;"></iconify-icon></a>
+            <a href="https://x.com/akshat___30" target="_blank" rel="noopener" aria-label="Twitter" style="color: rgba(231,231,231,0.55); transition: color .2s;" style-hover="color: #fff;"><iconify-icon icon="mdi:twitter" style="font-size: 20px;"></iconify-icon></a>
+            <a href="mailto:akshatg9636@gmail.com" aria-label="Email" style="color: rgba(231,231,231,0.55); transition: color .2s;" style-hover="color: #fff;"><iconify-icon icon="mdi:email-outline" style="font-size: 20px;"></iconify-icon></a>
+          </div>
+        </div>
+
+        <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 0;">
+          <div ref="{{ dockRef }}" style="width: 100%; max-width: 448px; height: 560px; max-height: 62vh; position: relative;">
+            <sc-if value="{{ closed }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ reopen }}" style="position: absolute; inset: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border-radius: 16px; background: rgba(10,10,10,0.35); border: 1px dashed rgba(255,255,255,0.10); color: rgba(231,231,231,0.55); cursor: pointer; transition: border-color .25s ease, background-color .25s ease;" style-hover="border-color: rgba(74,222,128,0.4); background: rgba(15,20,16,0.5); color: rgba(231,231,231,0.78);">
+                <span style="width: 44px; height: 44px; border-radius: 9999px; border: 1px solid rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); display: flex; align-items: center; justify-content: center;">
+                  <iconify-icon icon="mage:message-dots-round" style="font-size: 20px; color: #4ade80;"></iconify-icon>
+                </span>
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; letter-spacing: 0.02em;">reopen ask.akshat</span>
+              </button>
+            </sc-if>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 448px;">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px; transition: border-color .25s ease, background-color .25s ease;" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.7);">
+                <div style="font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', ui-monospace, monospace; color: #f5f5f5; letter-spacing: -0.02em;">{{ s.value }}</div>
+                <div style="font-size: 11px; color: rgba(231,231,231,0.55); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;">{{ s.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <a href="#experience" aria-label="Scroll to experience" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 32px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: rgba(231,231,231,0.55);" style-hover="color: #4ade80;">
+          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; font-family: 'JetBrains Mono', ui-monospace, monospace;">scroll</span>
+          <div style="position: relative; height: 56px; width: 1px; background: rgba(255,255,255,0.1); overflow: hidden;">
+            <span style="position: absolute; left: 0; right: 0; height: 50%; background: linear-gradient(to bottom, transparent, #4ade80, transparent); animation: scroll-pulse 2.2s cubic-bezier(0.55,0.05,0.45,0.95) infinite;"></span>
+          </div>
+        </a>
+      </section>
+
+      <section id="experience" data-screen-label="Experience" style="width: 100%; background-image: radial-gradient(60% 50% at 50% 0%, rgba(34,197,94,0.05), transparent 70%); height: max-content; margin-top: 80px; display: flex; flex-direction: column; align-items: center; padding: 96px 48px; max-width: 1024px; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 80px;">
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">// where I've shipped</span>
+          <h2 style="font-size: clamp(30px, 3.5vw, 48px); font-weight: 700; color: #f5f5f5; letter-spacing: -0.02em;">Experience</h2>
+          <div style="height: 1px; width: 64px; background: rgba(74,222,128,0.6); margin-top: 8px;"></div>
+        </div>
+
+        <div ref="{{ timelineRef }}" style="position: relative; width: 100%; max-width: 1024px;">
+          <div style="position: absolute; left: 50%; transform: translateX(-50%); top: 8px; bottom: 8px; width: 1px; background: rgba(255,255,255,0.1);"></div>
+          <div style="{{ spineStyle }}"></div>
+
+          <sc-for list="{{ experiences }}" as="exp" hint-placeholder-count="7">
+            <div ref="{{ exp.ref }}" style="{{ exp.rowStyle }}">
+              <div style="position: absolute; left: 50%; transform: translateX(-50%); top: 12px; z-index: 10;">
+                <div style="{{ exp.dotStyle }}">
+                  <sc-if value="{{ exp.isActive }}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; inset: 0; border-radius: 9999px; background: rgba(74,222,128,0.4); animation: om-ping 1s cubic-bezier(0,0,0.2,1) infinite;"></span>
+                  </sc-if>
+                </div>
+              </div>
+
+              <div style="{{ exp.colStyle }}">
+                <div style="{{ exp.cardStyle }}">
+                  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="{{ exp.iconBoxStyle }}">
+                        <iconify-icon icon="{{ exp.logo }}" style="{{ exp.iconStyle }}"></iconify-icon>
+                      </div>
+                      <div>
+                        <a href="{{ exp.website }}" target="_blank" rel="noopener noreferrer" style="font-size: clamp(18px,1.5vw,20px); font-weight: 600; color: #f5f5f5; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px;" style-hover="color: #4ade80;">
+                          {{ exp.company }}
+                          <sc-if value="{{ exp.hasSite }}" hint-placeholder-val="{{ true }}">
+                            <iconify-icon icon="mdi:arrow-top-right" style="font-size: 14px; opacity: 0.5;"></iconify-icon>
+                          </sc-if>
+                        </a>
+                        <p style="font-size: 14px; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">{{ exp.role }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; color: rgba(231,231,231,0.55); margin-bottom: 12px;">
+                    <span style="color: rgba(231,231,231,0.78);">{{ exp.period }}</span>
+                    <span style="color: rgba(255,255,255,0.2);">•</span>
+                    <span style="display: flex; align-items: center; gap: 4px;">
+                      <iconify-icon icon="mdi:map-marker-outline" style="font-size: 12px;"></iconify-icon>{{ exp.location }}
+                    </span>
+                  </div>
+
+                  <ul style="display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: rgba(231,231,231,0.78); line-height: 1.625;">
+                    <sc-for list="{{ exp.highlights }}" as="h" hint-placeholder-count="3">
+                      <li style="display: flex; gap: 8px; align-items: flex-start;">
+                        <span style="color: #4ade80; margin-top: 4px; flex-shrink: 0;">▸</span>
+                        <span style="text-wrap: pretty;">{{ h }}</span>
+                      </li>
+                    </sc-for>
+                  </ul>
+
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <sc-for list="{{ exp.tech }}" as="t" hint-placeholder-count="5">
+                      <span style="padding: 2px 8px; font-size: 11px; font-family: 'JetBrains Mono', ui-monospace, monospace; border-radius: 4px; background: rgba(255,255,255,0.05); color: rgba(231,231,231,0.55); border: 1px solid rgba(255,255,255,0.05);">{{ t }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="skills" data-screen-label="Skills" style="width: 100%; background-image: radial-gradient(60% 50% at 50% 0%, rgba(34,197,94,0.05), transparent 70%); height: max-content; margin-top: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 32px; padding: 96px 48px; max-width: 1024px; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 40px;">
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">// the toolbox</span>
+          <h2 style="font-size: clamp(30px, 3.5vw, 48px); font-weight: 700; color: #f5f5f5; letter-spacing: -0.02em;">Skills</h2>
+          <div style="height: 1px; width: 64px; background: rgba(74,222,128,0.6); margin-top: 8px;"></div>
+        </div>
+
+        <div style="text-align: center; width: 58.333%; margin-top: -8px;">
+          <p style="font-size: 16px; color: rgba(231,231,231,0.55);">A working stack — the things I've actually shipped to production.</p>
+        </div>
+
+        <div style="width: 100%; max-width: 1024px; margin-top: 16px; display: flex; flex-direction: column; gap: 40px;">
+          <section style="display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 16px;">
+            <sc-for list="{{ techs }}" as="tech" hint-placeholder-count="4">
+              <div style="position: relative; background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 24px; height: 100%; overflow: hidden; box-sizing: border-box; transition: border-color .3s ease, background-color .3s ease, transform .3s ease;" style-hover="border-color: rgba(74,222,128,0.3); background: rgba(15,25,18,0.6); transform: translateY(-2px);">
+                <div style="position: absolute; top: -64px; right: -64px; width: 160px; height: 160px; border-radius: 9999px; background: rgba(74,222,128,0.07); filter: blur(40px); pointer-events: none;"></div>
+                <div style="position: absolute; top: 0; left: 24px; right: 24px; height: 1px; background: linear-gradient(to right, transparent, rgba(74,222,128,0.4), transparent);"></div>
+                <div style="position: relative; display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                  <div style="padding: 10px; border-radius: 6px; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);">
+                    <iconify-icon icon="{{ tech.icon }}" style="font-size: 20px; color: #4ade80;"></iconify-icon>
+                  </div>
+                  <div>
+                    <p style="font-size: 18px; font-weight: 600; color: #f5f5f5; letter-spacing: -0.02em;">{{ tech.name }}</p>
+                    <p style="font-size: 12px; color: rgba(231,231,231,0.55);">{{ tech.about }}</p>
+                  </div>
+                </div>
+                <div style="position: relative; display: flex; flex-wrap: wrap; gap: 8px;">
+                  <sc-for list="{{ tech.tech }}" as="t" hint-placeholder-count="6">
+                    <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; padding: 6px 12px; border-radius: 6px; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15); color: rgba(231,231,231,0.78); transition: all .2s;" style-hover="background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.5); color: #86efac;">{{ t }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </section>
+
+          <div style="position: relative; width: 100%; overflow: hidden; padding: 16px 0; mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);">
+            <div style="display: flex; gap: 16px; white-space: nowrap; color: rgba(231,231,231,0.78); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; animation: scroll-row 35s linear infinite; width: max-content;">
+              <sc-for list="{{ marquee }}" as="t" hint-placeholder-count="10">
+                <span style="padding: 10px 20px; border: 1px solid rgba(74,222,128,0.15); background: rgba(74,222,128,0.04); border-radius: 8px; transition: all .2s;" style-hover="background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.5); color: #86efac;">{{ t }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" data-screen-label="Projects" style="width: 100%; background-image: radial-gradient(60% 50% at 50% 0%, rgba(34,197,94,0.05), transparent 70%); display: flex; flex-direction: column; justify-content: center; align-items: center; height: max-content; margin-top: 80px; padding: 96px 48px; max-width: 1024px; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 64px;">
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">// things I've shipped</span>
+          <h2 style="font-size: clamp(30px, 3.5vw, 48px); font-weight: 700; color: #f5f5f5; letter-spacing: -0.02em;">Projects</h2>
+          <div style="height: 1px; width: 64px; background: rgba(74,222,128,0.6); margin-top: 8px;"></div>
+        </div>
+
+        <div style="width: 100%; max-width: 1024px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <sc-for list="{{ projects }}" as="p" hint-placeholder-count="6">
+            <article style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: border-color .25s ease, background-color .25s ease, transform .25s ease;" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.7);">
+              <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <img src="{{ p.image }}" alt="{{ p.name }}" loading="lazy" style="object-fit: cover; width: 100%; height: 100%; transition: transform .7s;" />
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.3) 50%, transparent);"></div>
+                <sc-if value="{{ p.featured }}" hint-placeholder-val="{{ false }}">
+                  <span style="position: absolute; top: 12px; left: 12px; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); color: #4ade80;">Featured</span>
+                </sc-if>
+                <span style="position: absolute; top: 12px; right: 12px; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', ui-monospace, monospace; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); color: rgba(231,231,231,0.55);">{{ p.category }}</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; flex: 1 1 0%;">
+                <h3 style="font-size: 20px; font-weight: 600; color: #f5f5f5; letter-spacing: -0.02em;">{{ p.name }}</h3>
+                <p style="font-size: 14px; color: rgba(231,231,231,0.78); line-height: 1.625; text-wrap: pretty;">{{ p.about }}</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+                  <sc-for list="{{ p.tech }}" as="t" hint-placeholder-count="4">
+                    <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); color: rgba(231,231,231,0.55);">{{ t }}</span>
+                  </sc-for>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 12px;">
+                  <a href="{{ p.github }}" target="_blank" rel="noopener noreferrer" style="flex: 1 1 0%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); color: rgba(231,231,231,0.78); font-size: 14px; transition: all .2s;" style-hover="border-color: rgba(74,222,128,0.4); color: #4ade80;">
+                    <iconify-icon icon="mdi:github" style="font-size: 16px;"></iconify-icon>
+                    <span>{{ p.codeLabel }}</span>
+                    <sc-if value="{{ p.isPrivate }}" hint-placeholder-val="{{ false }}">
+                      <iconify-icon icon="mdi:lock-outline" style="font-size: 12px; opacity: 0.6;"></iconify-icon>
+                    </sc-if>
+                  </a>
+                  <sc-if value="{{ p.link }}" hint-placeholder-val="{{ true }}">
+                    <a href="{{ p.link }}" target="_blank" rel="noopener noreferrer" style="flex: 1 1 0%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; border-radius: 6px; background: #4ade80; color: #000; font-weight: 500; font-size: 14px; transition: background-color .2s;" style-hover="background: #86efac; color: #000;">
+                      <iconify-icon icon="mdi:arrow-top-right" style="font-size: 16px;"></iconify-icon><span>Live</span>
+                    </a>
+                  </sc-if>
+                </div>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="about" data-screen-label="About" style="width: 100%; background-image: radial-gradient(60% 50% at 50% 0%, rgba(34,197,94,0.05), transparent 70%); height: max-content; margin-top: 80px; display: flex; flex-direction: column; align-items: center; padding: 96px 48px; max-width: 1024px; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 80px;">
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">// the human behind the code</span>
+          <h2 style="font-size: clamp(30px, 3.5vw, 48px); font-weight: 700; color: #f5f5f5; letter-spacing: -0.02em;">About</h2>
+          <div style="height: 1px; width: 64px; background: rgba(74,222,128,0.6); margin-top: 8px;"></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 24px; width: 100%; max-width: 1024px;">
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 32px; line-height: 1.625; color: rgba(231,231,231,0.78);">
+              <p style="font-size: 18px; text-wrap: pretty;">I'm a <span style="color: #fff; font-weight: 500;">Software Engineer</span> who likes systems that don't fall over. Most of my day is spent on high-volume <span style="color: #fff;">log ingestion pipelines streaming into ClickHouse</span> — designing schemas, tuning MergeTree partitioning, and squeezing every bit of throughput out of columnar storage.</p>
+              <p style="font-size: 18px; margin-top: 16px; text-wrap: pretty;">Outside the day job at <a href="https://mark-ai.tech/" target="_blank" rel="noopener" style="color: #4ade80; text-underline-offset: 4px;" style-hover="text-decoration: underline;">Mark AI</a>, I've co-founded an edtech startup, freelanced full-stack apps for ride-booking and ad-tech, and built a 3D solar-system simulator just because it sounded fun.</p>
+              <p style="font-size: 18px; margin-top: 16px; color: rgba(231,231,231,0.55);">Bias toward action. Paranoid about latency. Allergic to flaky tests.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <sc-for list="{{ facts }}" as="f" hint-placeholder-count="4">
+                <div style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px; transition: border-color .25s ease, background-color .25s ease;" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.7);">
+                  <iconify-icon icon="{{ f.icon }}" style="font-size: 18px; color: rgba(231,231,231,0.55); flex-shrink: 0; margin-top: 2px;"></iconify-icon>
+                  <div>
+                    <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">{{ f.label }}</div>
+                    <div style="font-size: 14px; color: rgba(231,231,231,0.78); margin-top: 2px;">{{ f.value }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 24px;">
+              <h3 style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); margin-bottom: 20px;">// the receipts</h3>
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <sc-for list="{{ wins }}" as="w" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: baseline; gap: 16px;">
+                    <span style="font-size: 30px; font-weight: 700; font-family: 'JetBrains Mono', ui-monospace, monospace; color: #4ade80; width: 56px; flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums;">{{ w.stat }}</span>
+                    <span style="font-size: 14px; color: rgba(231,231,231,0.78); line-height: 1.375;">{{ w.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 24px;">
+              <p style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55);">// currently building</p>
+              <p style="margin-top: 8px; color: rgba(231,231,231,0.78); font-size: 16px; text-wrap: pretty;">High-volume log ingestion into <span style="color: #fff;">ClickHouse</span> and the observability layer on top — making columnar storage, compression and MergeTree engines work for engineers, not against them.</p>
+              <a href="/Akshat.pdf" target="_blank" style="margin-top: 20px; display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 6px; background: #4ade80; color: #000; font-weight: 500; box-sizing: border-box; transition: background-color .2s;" style-hover="background: #86efac; color: #000;">
+                <iconify-icon icon="mdi:download-outline" style="font-size: 18px;"></iconify-icon>Download Resume
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" data-screen-label="Contact" style="width: 100%; background-image: radial-gradient(60% 50% at 50% 0%, rgba(34,197,94,0.05), transparent 70%); height: max-content; margin-top: 80px; display: flex; flex-direction: column; align-items: center; padding: 96px 48px; max-width: 1024px; box-sizing: border-box;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 64px;">
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">// say hi</span>
+          <h2 style="font-size: clamp(30px, 3.5vw, 48px); font-weight: 700; color: #f5f5f5; letter-spacing: -0.02em;">Contact</h2>
+          <div style="height: 1px; width: 64px; background: rgba(74,222,128,0.6); margin-top: 8px;"></div>
+        </div>
+
+        <div style="text-align: center; width: 58.333%; margin-top: -24px; margin-bottom: 32px;">
+          <p style="font-size: 16px; color: rgba(231,231,231,0.55); text-wrap: pretty;">Got a problem worth solving, a role to fill, or just want to nerd out about observability? My inbox is open.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 3fr; gap: 20px; width: 100%; max-width: 1024px;">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <sc-for list="{{ channels }}" as="c" hint-placeholder-count="4">
+              <a href="{{ c.href }}" target="_blank" rel="noopener" style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 12px; color: inherit; transition: border-color .25s ease, background-color .25s ease;" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.7); color: inherit;">
+                <iconify-icon icon="{{ c.icon }}" style="font-size: 20px; color: rgba(231,231,231,0.55);"></iconify-icon>
+                <div style="flex: 1 1 0%; min-width: 0;">
+                  <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">{{ c.label }}</div>
+                  <div style="font-size: 14px; color: rgba(231,231,231,0.78); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ c.value }}</div>
+                </div>
+                <iconify-icon icon="mdi:arrow-top-right" style="color: rgba(231,231,231,0.55);"></iconify-icon>
+              </a>
+            </sc-for>
+
+            <div style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 16px; margin-top: 4px;">
+              <p style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55);">// response time</p>
+              <p style="margin-top: 4px; font-size: 14px; color: rgba(231,231,231,0.78);">Usually within <span style="color: #fff;">24 hours</span>. Faster if it's a fun problem.</p>
+            </div>
+          </div>
+
+          <form onSubmit="{{ handleSubmit }}" style="background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 32px; display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label for="firstname" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">First name</label>
+                <input required type="text" id="firstname" placeholder="Ada" style="padding: 0.6rem 0.85rem; border-radius: 0.5rem; color: rgb(231,231,231); background-color: rgba(0,0,0,0.4); width: 100%; outline: none; border: 1px solid rgba(255,255,255,0.08); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.9rem; box-sizing: border-box;" style-focus="border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 3px rgba(74,222,128,0.1);" />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label for="lastname" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">Last name</label>
+                <input required type="text" id="lastname" placeholder="Lovelace" style="padding: 0.6rem 0.85rem; border-radius: 0.5rem; color: rgb(231,231,231); background-color: rgba(0,0,0,0.4); width: 100%; outline: none; border: 1px solid rgba(255,255,255,0.08); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.9rem; box-sizing: border-box;" style-focus="border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 3px rgba(74,222,128,0.1);" />
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="email" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">Email</label>
+              <input required type="email" id="email" placeholder="you@domain.com" style="padding: 0.6rem 0.85rem; border-radius: 0.5rem; color: rgb(231,231,231); background-color: rgba(0,0,0,0.4); width: 100%; outline: none; border: 1px solid rgba(255,255,255,0.08); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.9rem; box-sizing: border-box;" style-focus="border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 3px rgba(74,222,128,0.1);" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="phone" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">Phone</label>
+              <input required type="tel" id="phone" placeholder="9XXXXXXXXX" style="padding: 0.6rem 0.85rem; border-radius: 0.5rem; color: rgb(231,231,231); background-color: rgba(0,0,0,0.4); width: 100%; outline: none; border: 1px solid rgba(255,255,255,0.08); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.9rem; box-sizing: border-box;" style-focus="border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 3px rgba(74,222,128,0.1);" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="description" style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(231,231,231,0.55); font-family: 'JetBrains Mono', ui-monospace, monospace;">Tell me about it</label>
+              <textarea required rows="4" id="description" placeholder="What are you building? What hurts?" style="padding: 0.6rem 0.85rem; border-radius: 0.5rem; color: rgb(231,231,231); background-color: rgba(0,0,0,0.4); width: 100%; outline: none; border: 1px solid rgba(255,255,255,0.08); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.9rem; resize: none; box-sizing: border-box;" style-focus="border-color: rgba(74,222,128,0.5); box-shadow: 0 0 0 3px rgba(74,222,128,0.1);"></textarea>
+            </div>
+            <button type="submit" style="align-self: flex-end; margin-top: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 24px; border-radius: 6px; background: #4ade80; color: #000; font-weight: 500; border: none; cursor: pointer; font-size: 16px; transition: background-color .2s;" style-hover="background: #86efac;">
+              <iconify-icon icon="mdi:send-outline" style="font-size: 18px;"></iconify-icon>Send Message
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer style="width: 100%; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 64px;">
+      <div style="width: 100%; max-width: 1024px; margin: 0 auto; padding: 28px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-sizing: border-box;">
+        <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; color: rgba(231,231,231,0.55);">
+          <span style="color: #4ade80;">$</span> built with caffeine &amp; ClickHouse logs
+          <div style="font-size: 11px; color: rgba(231,231,231,0.38); margin-top: 2px;">© 2026 Akshat Gupta</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <a href="https://www.linkedin.com/in/akshatgg/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" style="padding: 8px; border-radius: 6px; color: rgba(231,231,231,0.55); transition: all .2s;" style-hover="color: #fff; background: rgba(255,255,255,0.05);"><iconify-icon icon="mdi:linkedin" style="font-size: 18px;"></iconify-icon></a>
+          <a href="https://github.com/akshatgg" target="_blank" rel="noopener noreferrer" aria-label="GitHub" style="padding: 8px; border-radius: 6px; color: rgba(231,231,231,0.55); transition: all .2s;" style-hover="color: #fff; background: rgba(255,255,255,0.05);"><iconify-icon icon="mdi:github" style="font-size: 18px;"></iconify-icon></a>
+          <a href="https://x.com/akshat___30" target="_blank" rel="noopener noreferrer" aria-label="Twitter" style="padding: 8px; border-radius: 6px; color: rgba(231,231,231,0.55); transition: all .2s;" style-hover="color: #fff; background: rgba(255,255,255,0.05);"><iconify-icon icon="mdi:twitter" style="font-size: 18px;"></iconify-icon></a>
+          <a href="mailto:akshatg9636@gmail.com" rel="noopener noreferrer" aria-label="Email" style="padding: 8px; border-radius: 6px; color: rgba(231,231,231,0.55); transition: all .2s;" style-hover="color: #fff; background: rgba(255,255,255,0.05);"><iconify-icon icon="mdi:email-outline" style="font-size: 18px;"></iconify-icon></a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <button onClick="{{ scrollToTop }}" aria-label="Back to top" style="{{ backToTopStyle }}">
+    <iconify-icon icon="mdi:arrow-up" style="font-size: 20px;"></iconify-icon>
+  </button>
+
+  <!-- ASK — docks into the hero panel, expands full-screen -->
+  <div style="{{ backdropStyle }}" onClick="{{ collapse }}"></div>
+
+  <div style="{{ askSurfaceStyle }}">
+    <div style="flex-shrink: 0; height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+      <div style="display: flex; gap: 8px; align-items: center;" onMouseEnter="{{ hoverLights }}" onMouseLeave="{{ unhoverLights }}">
+        <button onClick="{{ close }}" aria-label="Close" title="Close" style="width: 12px; height: 12px; padding: 0; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #ff5f57; transition: filter .2s;" style-hover="filter: brightness(1.25);">
+          <span style="{{ lightGlyphStyle }}">✕</span>
+        </button>
+        <button onClick="{{ collapse }}" aria-label="Dock" title="Dock to hero" style="width: 12px; height: 12px; padding: 0; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #febc2e; transition: filter .2s;" style-hover="filter: brightness(1.25);">
+          <span style="{{ lightGlyphStyle }}">–</span>
+        </button>
+        <button onClick="{{ expand }}" aria-label="Expand" title="Expand" style="width: 12px; height: 12px; padding: 0; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #28c840; transition: filter .2s;" style-hover="filter: brightness(1.25);">
+          <span style="{{ lightGlyphStyle }}">⤢</span>
+        </button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 9px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: rgba(231,231,231,0.55); letter-spacing: 0.02em;">
+        <span style="{{ headerDotStyle }}"></span><span>{{ chromeLabel }}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <sc-if value="{{ hasHistory }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ resetChat }}" aria-label="New thread" style="width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: transparent; border: 1px solid rgba(255,255,255,0.08); color: rgba(231,231,231,0.55); cursor: pointer; transition: all .2s;" style-hover="color: #4ade80; border-color: rgba(74,222,128,0.4);">
+            <iconify-icon icon="mdi:broom" style="font-size: 13px;"></iconify-icon>
+          </button>
+        </sc-if>
+        <button onClick="{{ toggleExpand }}" aria-label="Expand" style="width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: transparent; border: 1px solid rgba(255,255,255,0.08); color: rgba(231,231,231,0.55); cursor: pointer; transition: all .2s;" style-hover="color: #4ade80; border-color: rgba(74,222,128,0.4);">
+          <iconify-icon icon="{{ expandIcon }}" style="font-size: 13px;"></iconify-icon>
+        </button>
+      </div>
+    </div>
+
+    <div style="{{ askBodyStyle }}">
+
+      <div style="{{ orbPaneStyle }}">
+        <div style="{{ orbBoxStyle }}">
+          <div ref="{{ orbRef }}" style="position: absolute; inset: 0;"></div>
+        </div>
+        <sc-if value="{{ expanded }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 20px; font-weight: 600; color: #f5f5f5; letter-spacing: 0.22em; padding-left: 0.22em;">ASK</div>
+            <p style="font-size: 13px; color: rgba(231,231,231,0.55); text-align: center; line-height: 1.6; max-width: 260px; text-wrap: pretty; letter-spacing: 0.01em;">The index of Akshat's work. It answers from his own résumé, repos and shipped systems — nothing else.</p>
+          </div>
+          <div style="margin-top: auto; padding-top: 22px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.38);">// telemetry</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <sc-for list="{{ telemetry }}" as="t" hint-placeholder-count="4">
+                <div style="background: rgba(10,10,10,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px;">
+                  <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(231,231,231,0.38); font-family: 'JetBrains Mono', ui-monospace, monospace;">{{ t.label }}</div>
+                  <div style="font-size: 14px; color: rgba(231,231,231,0.85); font-family: 'JetBrains Mono', ui-monospace, monospace; margin-top: 3px; font-variant-numeric: tabular-nums;">{{ t.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(231,231,231,0.38); font-family: 'JetBrains Mono', ui-monospace, monospace;">
+              <iconify-icon icon="mdi:shield-lock-outline" style="font-size: 13px;"></iconify-icon>Stateless API · history stays in your browser
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display: flex; flex-direction: column; min-height: 0; flex: 1 1 0%;">
+        <div ref="{{ scrollRef }}" style="{{ scrollAreaStyle }}">
+          <div style="{{ convoInnerStyle }}">
+
+            <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 18px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(231,231,231,0.38);">// ask the index</span>
+                  <h2 style="{{ greetingStyle }}">Skip the résumé.<br /><span style="color: #4ade80;">Interrogate it.</span></h2>
+                  <sc-if value="{{ expanded }}" hint-placeholder-val="{{ false }}">
+                    <p style="font-size: 16px; color: rgba(231,231,231,0.78); line-height: 1.65; max-width: 520px; text-wrap: pretty; letter-spacing: 0.01em;">Everything Akshat has built — ClickHouse ingestion pipelines, an AI booking agent, a Kotlin signage player, seven roles' worth of receipts — is loaded in. Ask in plain language and it answers with the actual numbers.</p>
+                  </sc-if>
+                </div>
+
+                <div style="{{ startersGridStyle }}">
+                  <sc-for list="{{ starters }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.onClick }}" style="{{ s.style }}" style-hover="border-color: rgba(34,197,94,0.35); background: rgba(15,15,15,0.75); transform: translateY(-2px);">
+                      <iconify-icon icon="{{ s.icon }}" style="font-size: 15px; color: #4ade80; flex-shrink: 0; margin-top: 1px;"></iconify-icon>
+                      <span>{{ s.text }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ messages }}" as="m" hint-placeholder-count="0">
+              <div style="{{ m.rowStyle }}">
+                <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bubbleStyle }}">{{ m.content }}</div>
+                </sc-if>
+
+                <sc-if value="{{ m.isAssistant }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: 12px; width: 100%;">
+                    <div style="{{ m.avatarStyle }}">
+                      <span style="width: 7px; height: 7px; border-radius: 9999px; background: #4ade80; display: block;"></span>
+                    </div>
+                    <div style="flex: 1 1 0%; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.22em; color: rgba(231,231,231,0.55);">ASK</span>
+                        <span style="height: 1px; flex: 1 1 0%; background: linear-gradient(to right, rgba(74,222,128,0.25), transparent);"></span>
+                      </div>
+
+                      <sc-for list="{{ m.paragraphs }}" as="p" hint-placeholder-count="2">
+                        <p style="{{ m.textStyle }}">{{ p }}</p>
+                      </sc-for>
+
+                      <sc-if value="{{ m.streaming }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; align-items: center; gap: 9px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: rgba(231,231,231,0.38);">
+                          <span style="position: relative; display: block; width: 6px; height: 6px;">
+                            <span style="position: absolute; inset: 0; border-radius: 9999px; background: #4ade80; opacity: 0.6; animation: om-ping 1.1s cubic-bezier(0,0,0.2,1) infinite;"></span>
+                            <span style="position: relative; display: block; width: 6px; height: 6px; border-radius: 9999px; background: #4ade80;"></span>
+                          </span>
+                          streaming
+                        </div>
+                      </sc-if>
+
+                      <sc-if value="{{ m.card }}" hint-placeholder-val="{{ false }}">
+                        <a href="{{ m.card.link }}" target="_blank" rel="noopener" style="display: flex; border-radius: 10px; overflow: hidden; background: rgba(10,10,10,0.7); border: 1px solid rgba(255,255,255,0.06); color: inherit; transition: border-color .25s ease, transform .25s ease;" style-hover="border-color: rgba(34,197,94,0.35); transform: translateY(-2px); color: inherit;">
+                          <div style="{{ m.cardThumbStyle }}">
+                            <div style="position: absolute; inset: 0; background: linear-gradient(to right, transparent, rgba(0,0,0,0.55));"></div>
+                          </div>
+                          <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                              <span style="font-size: 14px; font-weight: 600; color: #f5f5f5; letter-spacing: -0.01em;">{{ m.card.name }}</span>
+                              <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; padding: 2px 7px; border-radius: 4px; background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.28); color: #4ade80;">{{ m.card.category }}</span>
+                            </div>
+                            <p style="font-size: 12px; color: rgba(231,231,231,0.6); line-height: 1.55;">{{ m.card.about }}</p>
+                          </div>
+                        </a>
+                      </sc-if>
+
+                      <sc-if value="{{ m.hasSources }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: rgba(231,231,231,0.3);">from</span>
+                          <sc-for list="{{ m.sources }}" as="src" hint-placeholder-count="2">
+                            <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; padding: 3px 8px; border-radius: 9999px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); color: rgba(231,231,231,0.45);">{{ src }}</span>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ thinking }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 12px; animation: ask-rise .4s cubic-bezier(0.22,1,0.36,1) both;">
+                <div style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 9999px; border: 1px solid rgba(74,222,128,0.35); display: flex; align-items: center; justify-content: center; background: rgba(74,222,128,0.08); animation: ask-bob 2s ease-in-out infinite;">
+                  <span style="width: 7px; height: 7px; border-radius: 9999px; background: #4ade80; display: block;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 9px; flex: 1 1 0%; padding-top: 3px;">
+                  <div style="position: relative; height: 8px; width: 70%; border-radius: 4px; background: rgba(255,255,255,0.05); overflow: hidden;">
+                    <span style="position: absolute; inset-block: 0; width: 33%; background: linear-gradient(90deg, transparent, rgba(74,222,128,0.35), transparent); animation: ask-sweep 1.4s linear infinite;"></span>
+                  </div>
+                  <div style="position: relative; height: 8px; width: 45%; border-radius: 4px; background: rgba(255,255,255,0.05); overflow: hidden;">
+                    <span style="position: absolute; inset-block: 0; width: 33%; background: linear-gradient(90deg, transparent, rgba(74,222,128,0.25), transparent); animation: ask-sweep 1.4s linear .3s infinite;"></span>
+                  </div>
+                  <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: rgba(231,231,231,0.38);">{{ thinkingLabel }}</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="{{ composerWrapStyle }}">
+          <div style="{{ composerInnerStyle }}">
+            <sc-if value="{{ showFollowUps }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 7px; flex-wrap: wrap; padding-bottom: 10px;">
+                <sc-for list="{{ followUps }}" as="f" hint-placeholder-count="3">
+                  <button onClick="{{ f.onClick }}" style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; padding: 6px 12px; border-radius: 9999px; background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.18); color: rgba(231,231,231,0.7); cursor: pointer; transition: all .2s; letter-spacing: 0.01em;" style-hover="background: rgba(74,222,128,0.14); border-color: rgba(74,222,128,0.5); color: #86efac;">{{ f.text }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <div style="{{ composerStyle }}">
+              <textarea ref="{{ inputRef }}" value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKeyDown }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" rows="1" placeholder="Ask anything about Akshat…" style="flex: 1 1 0%; resize: none; background: transparent; border: none; outline: none; color: #e7e7e7; font-size: 14.5px; line-height: 1.6; max-height: 120px; padding: 3px 0; letter-spacing: 0.01em;"></textarea>
+              <button onClick="{{ send }}" aria-label="Send" style="{{ sendStyle }}">
+                <iconify-icon icon="mdi:arrow-up" style="font-size: 17px;"></iconify-icon>
+              </button>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: rgba(231,231,231,0.3);">
+              <span>{{ hintLine }}</span><span>{{ modelLine }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;apiBase&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Assistant&quot;, &quot;label&quot;: &quot;Chat API origin&quot; },
+  &quot;orbDensity&quot;: { &quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 3400, &quot;min&quot;: 1200, &quot;max&quot;: 9000, &quot;step&quot;: 400, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Assistant&quot; }
+}">
+const D = {
+  SECTIONS: [
+    { name: 'Home', id: 'home' },
+    { name: 'Experience', id: 'experience' },
+    { name: 'Skills', id: 'skills' },
+    { name: 'Projects', id: 'projects' },
+    { name: 'About', id: 'about' },
+    { name: 'Contact', id: 'contact' }
+  ],
+
+  ROLES: ['Software Engineer', 'Backend & Systems', 'Observability Engineer'],
+
+  STATS: [
+    { value: '15+', label: 'Microservices monitored' },
+    { value: '65%', label: 'Faster RCA' },
+    { value: '1.5k+', label: 'Concurrent users' },
+    { value: '3+', label: 'Years building' }
+  ],
+
+  EXPERIENCES: [
+    { company: 'Mark AI', role: 'Software Engineer · Full Time', period: 'Jun 2026 — Present', location: 'Remote · India', website: 'https://mark-ai.tech/', logo: 'mdi:billboard',
+      highlights: [
+        'Building an AI-native DOOH advertising platform — leveraging ML-based recommendation models to suggest related and competitor screens to advertisers, improving campaign targeting and screen discovery across 1 Lakh+ digital displays.',
+        'Built an AI booking agent that converts natural-language requests into executable booking scripts, letting advertisers book screens through conversational input instead of manual workflows.',
+        'Own the CMS portal and its connected main site end to end — operators and advertisers manage screen inventory, content, campaign scheduling and payments from a single platform.',
+        'Built a native Android signage-player APK in Kotlin that self-registers to the in-house CMS and streams scheduled content to DOOH displays over a persistent WebSocket connection to the FastAPI backend for real-time playback and remote control.',
+        'Designed an interactive 3D website with Three.js/WebGL using Blender-crafted assets, plus AR previews via MindAR and 3D human models so clients can visualize ads in real-world environments before campaign deployment.',
+        'Deployed the platform on Google Cloud Platform behind a load balancer distributing traffic across instances for reliable, scalable production serving.'
+      ],
+      tech: ['FastAPI', 'Python', 'Kotlin', 'React', 'Three.js', 'Blender', 'Hunyuan 3D', 'MindAR', 'WebSocket', 'GCP'] },
+    { company: 'VibeMonitor', role: 'Software Engineer · Full Time', period: 'Sep 2025 — Jun 2026', location: 'Remote · India', website: 'https://vibemonitor.ai', logo: 'mdi:radar',
+      highlights: [
+        'Built Beryl, an AI-driven end-to-end test-automation product that crawls a target app from a single URL — including authenticated pages — generates natural-language test cases, converts them into Playwright scripts, and runs them headless to report pass/fail and a site-reliability score.',
+        "Owned Beryl's post-signup execution layer — scaling Playwright runs across a worker pool with self-healing selectors to eliminate flaky tests, plus building its Next.js frontend.",
+        'Built a high-throughput log ingestion platform with custom SDKs in Java, Python and JavaScript that async-batch high-volume logs into ClickHouse, tuned around its columnar engine, compression and binary format.',
+        'Stood up a centralized observability platform unifying AWS CloudWatch, New Relic APM, Datadog, Grafana and Prometheus across 15+ microservices — correlating logs, metrics and traces with RBAC and custom alerting (RED & USE methodologies).',
+        'Built an automated Root Cause Analysis engine on LangGraph that traces incidents through repository commit history — cutting incident investigation time by 65%.',
+        'Ran container orchestration on Kubernetes (Amazon EKS) and improved CI/CD with build caching & artifact reuse — cutting build time 20% across 10+ pipelines.'
+      ],
+      tech: ['Beryl', 'Playwright', 'ClickHouse', 'FastAPI', 'LangGraph', 'Kubernetes', 'Prometheus', 'Grafana', 'AWS', 'Next.js'] },
+    { company: 'iTax Easy', role: 'Full Stack & Server Developer · Internship', period: 'Feb 2025 — Sep 2025', location: 'Hybrid', website: 'https://itaxeasy.com', logo: 'mdi:file-document-edit-outline',
+      highlights: [
+        'Built high-performance web & Android apps on PostgreSQL + Next.js + Prisma — cut load times 45% and lifted user retention 30%.',
+        'Re-architected the database layer, accelerating query response by 60% and dropping server cost by 30%.',
+        'Tuned hPanel deployments and refactored hot code paths across the tax-filing workflow.'
+      ],
+      tech: ['Next.js', 'PostgreSQL', 'Prisma', 'Android Studio', 'hPanel', 'Node.js'] },
+    { company: 'Sakhi Women', role: 'Full Stack Developer · Freelance', period: 'Jan 2026 — Feb 2026', location: 'Remote', website: 'https://www.sakhiwomen.in/', logo: 'mdi:car-multiple',
+      highlights: [
+        'Built a ride-booking platform with RBAC, OTP-based passwordless auth and time-based dynamic pricing (1.5× night multiplier).',
+        'Optimized for 1500–2000 concurrent users — B-tree indexing dropped query latency by 70%.',
+        'Wired Twilio WhatsApp API for OTP, driver alerts and assignments + cron-based recurring scheduling.'
+      ],
+      tech: ['Node.js', 'Express', 'MongoDB', 'Twilio', 'Redis', 'JWT'] },
+    { company: 'Mark AI', role: 'Full Stack Developer · Freelance', period: 'Dec 2025 — Jan 2026', location: 'Remote', website: 'https://mark-ai.tech/', logo: 'mdi:billboard',
+      highlights: [
+        'Created an ad-booking platform with FastAPI integrating Screenox REST API for real-time inventory across 100+ digital displays.',
+        'Configured a round-robin load balancer fronting multiple FastAPI instances with connection pooling & async handling.',
+        'Integrated payment gateway and campaign-scheduling flows.'
+      ],
+      tech: ['FastAPI', 'Python', 'PostgreSQL', 'NGINX', 'REST'] },
+    { company: 'PrepSaarthi', role: 'Co-Founder & Technical Lead', period: 'Nov 2024 — Jul 2025', location: 'India', website: 'https://prepsaarthi.com', logo: 'mdi:rocket-launch-outline',
+      highlights: [
+        'Founded a mentor-driven edtech startup focused on career guidance and student upskilling for IIT-JEE aspirants.',
+        'Shipped 5+ features with React.js + MongoDB and integrated secure RESTful APIs with OAuth 2.0 — engagement up 40%.',
+        'Owned product, hiring and the end-to-end technical roadmap.'
+      ],
+      tech: ['React', 'MongoDB', 'Express', 'Node.js', 'Material UI'] },
+    { company: 'Al-Zira Technology', role: 'Frontend Engineer & Mentor · Internship', period: 'Feb 2024 — Dec 2024', location: 'India', website: '#', logo: 'mdi:palette-outline',
+      highlights: [
+        'Delivered multiple client-facing frontend projects in React at a service-based software company, building responsive, interactive user interfaces.',
+        'Engineered complex, smooth UI animations and motion effects to create polished, engaging experiences across projects.',
+        'Promoted from Engineer to Mentor within ~5–6 months, guiding and reviewing the work of other frontend engineers.'
+      ],
+      tech: ['React', 'JavaScript', 'CSS', 'Framer Motion', 'UI/UX'] }
+  ],
+
+  PROJECTS: [
+    { name: 'VibeMonitor', image: 'static/assests/hall.png', about: 'Production observability platform — high-throughput log ingestion into ClickHouse with custom Java/Python/JS SDKs, columnar schema tuning, and unified monitoring across 15+ microservices.', tech: ['ClickHouse', 'FastAPI', 'Python', 'Prometheus', 'Grafana'], link: 'https://vibemonitor.ai', github: 'https://github.com/akshatgg', isPrivate: true, featured: true, category: 'Product · Work' },
+    { name: 'iTaxEasy', image: 'static/assests/itax.png', about: 'Comprehensive tax filing & compliance platform — re-architected the DB layer to cut query response by 60% and trimmed server cost 30%.', tech: ['Next.js', 'Prisma', 'PostgreSQL', 'Express'], github: 'https://github.com/akshatgg/itax_next_main', link: 'https://itaxeasy.com/', isPrivate: false, featured: false, category: 'Internship' },
+    { name: 'Legal E-Library', image: 'static/assests/Elibrary.png', about: 'Digital library for legal case laws with advanced search across 10,000+ documents. Boosted research efficiency by 40%.', tech: ['Angular', 'Prisma', 'PostgreSQL', 'Express'], github: 'https://github.com/akshatgg/E_Library', link: '', isPrivate: false, featured: false, category: 'Product Build' },
+    { name: 'Cosmic-Trek', image: 'static/assests/Cosmic.png', about: 'Interactive 3D solar-system simulator with 8+ celestial bodies, 50+ exoplanets and a physics-based satellite-launch sandbox.', tech: ['Three.js', 'WebGL', 'D3.js', 'Redux'], github: 'https://github.com/akshatgg/OrreyApp', link: 'https://akshatgg.github.io/OrreyApp/', isPrivate: false, featured: false, category: 'Side Quest' },
+    { name: 'PrepSaarthi', image: 'static/assests/prep.png', about: 'Mentor-driven edtech platform for IIT-JEE aspirants. Co-founded, led tech, shipped 5+ features and lifted engagement by 40%.', tech: ['React', 'MongoDB', 'Express', 'OAuth 2.0'], github: 'https://github.com/akshatgg/PrepSaarthi-Frontend', link: '', isPrivate: false, featured: false, category: 'Co-Founder' },
+    { name: 'AntiSocial', image: 'static/assests/anti.png', about: 'Instagram-style social app with real-time chat, photo sharing and stories.', tech: ['Next.js', 'MERN', 'TailwindCSS', 'Razorpay'], github: 'https://github.com/akshatgg/AntiSocial', link: '', isPrivate: false, featured: false, category: 'Side Project' }
+  ],
+
+  TECHS: [
+    { name: 'Frontend', icon: 'mdi:monitor-dashboard', about: 'Pixel-precise interfaces that load fast.', tech: ['React', 'Next.js', 'TypeScript', 'TailwindCSS', 'Material UI', 'RxJS'] },
+    { name: 'Backend & Systems', icon: 'mdi:server-network', about: 'APIs and async pipelines built to fail gracefully.', tech: ['FastAPI', 'Node.js', 'Express', 'Python', 'Java', 'PostgreSQL', 'MongoDB', 'Prisma', 'Redis', 'ClickHouse'] },
+    { name: 'Observability', icon: 'mdi:radar', about: 'Knowing where the bytes hurt before users do.', tech: ['Prometheus', 'Grafana', 'Datadog', 'New Relic', 'OpenTelemetry', 'AWS CloudWatch', 'Loki', 'Tempo', 'Signoz'] },
+    { name: 'DevOps & Cloud', icon: 'mdi:cloud-outline', about: 'Reliable deploys, lean pipelines, sane infra.', tech: ['Docker', 'Kubernetes', 'AWS', 'GCP', 'Git', 'GitHub Apps', 'CI/CD', 'OAuth 2.0', 'JWT', 'WebSocket'] }
+  ],
+
+  MARQUEE: ['FastAPI', 'ClickHouse', 'Redis', 'PostgreSQL', 'Prometheus', 'Grafana', 'OpenTelemetry', 'Datadog', 'New Relic', 'AWS', 'Docker', 'Kubernetes', 'Next.js', 'Python', 'Java', 'TypeScript', 'Node.js', 'MongoDB', 'React'],
+
+  FACTS: [
+    { icon: 'mdi:school-outline', label: 'Education', value: 'B.Tech CSE (AI) — KIET, AKTU' },
+    { icon: 'mdi:map-marker-outline', label: 'Based in', value: 'India · Open to Remote' },
+    { icon: 'mdi:translate', label: 'Languages', value: 'English · Hindi' },
+    { icon: 'mdi:lightning-bolt-outline', label: 'Currently', value: 'Software Eng @ Mark AI' }
+  ],
+
+  WINS: [
+    { stat: '20%', label: 'Faster CI/CD builds via smart caching & artifact reuse' },
+    { stat: '60%', label: 'Faster query response after redesigning DB layer' },
+    { stat: '70%', label: 'Lower latency from B-tree indexing on a 2k-user platform' },
+    { stat: '15+', label: 'Microservices unified under one observability layer' }
+  ],
+
+  CHANNELS: [
+    { label: 'Email', value: 'akshatg9636@gmail.com', icon: 'mdi:email-outline', href: 'mailto:akshatg9636@gmail.com' },
+    { label: 'LinkedIn', value: '/in/akshatgg', icon: 'mdi:linkedin', href: 'https://www.linkedin.com/in/akshatgg/' },
+    { label: 'GitHub', value: '@akshatgg', icon: 'mdi:github', href: 'https://github.com/akshatgg' },
+    { label: 'Phone', value: '+91 96362 86581', icon: 'mdi:phone-outline', href: 'tel:+919636286581' }
+  ],
+
+  PROJECT_CARDS: {
+    vibemonitor: { name: 'VibeMonitor', image: 'static/assests/hall.png', category: 'Product · Work', about: 'High-throughput log ingestion into ClickHouse with custom Java/Python/JS SDKs and unified monitoring across 15+ microservices.', link: 'https://vibemonitor.ai' },
+    cosmic: { name: 'Cosmic-Trek', image: 'static/assests/Cosmic.png', category: 'Side Quest', about: 'Interactive 3D solar-system simulator with 8+ celestial bodies, 50+ exoplanets and a physics-based launch sandbox.', link: 'https://akshatgg.github.io/OrreyApp/' },
+    itaxeasy: { name: 'iTaxEasy', image: 'static/assests/itax.png', category: 'Internship', about: 'Tax filing & compliance platform — DB layer re-architected to cut query response 60% and server cost 30%.', link: 'https://itaxeasy.com/' }
+  },
+
+  // Offline responder. Same facts the deployed Gemini route answers from, so the
+  // page is demoable with no key; set the apiBase prop to use the real endpoint.
+  CANNED: [
+    { match: /mark ai|dooh|advertis|booking agent|signage/i, sources: ['experience/mark-ai'],
+      text: "At Mark AI he's building an AI-native DOOH advertising platform. The recommendation layer uses ML models to surface related and competitor screens to advertisers, improving campaign targeting and screen discovery across 1 Lakh+ digital displays.\n\nThe piece he'd point at first is the AI booking agent: it turns a natural-language request into an executable booking script, so advertisers book screens by describing what they want instead of clicking through a workflow. He also owns the CMS portal and the connected main site end to end.\n\nOn the device side he wrote a native Android signage-player APK in Kotlin that self-registers to the CMS and streams scheduled content over a persistent WebSocket to the FastAPI backend. The platform runs on GCP behind a load balancer." },
+    { match: /clickhouse|ingest|columnar|mergetree|\blog/i, sources: ['experience/vibemonitor', 'skills/observability'], card: 'vibemonitor',
+      text: "The ClickHouse work is at VibeMonitor. He built a high-throughput log ingestion platform with custom SDKs in Java, Python and JavaScript that async-batch high-volume logs into ClickHouse, tuned around its columnar engine, compression and binary format.\n\nAround that he stood up a centralized observability platform unifying AWS CloudWatch, New Relic APM, Datadog, Grafana and Prometheus across 15+ microservices — correlating logs, metrics and traces with RBAC and custom alerting built on the RED and USE methodologies.\n\nThe part with the sharpest number attached: an automated Root Cause Analysis engine on LangGraph that traces incidents through repository commit history, cutting incident investigation time by 65%." },
+    { match: /hire|open to work|available|role|opportunit|recruit/i, sources: ['about-me/status'],
+      text: "Yes — he's open to new opportunities. Based in India, open to remote.\n\nCurrently a Software Engineer at Mark AI, before that VibeMonitor. B.Tech CSE (AI) from KIET, AKTU. Three-plus years of building, mostly backend, systems and observability.\n\nThe fastest route is akshatg9636@gmail.com — he usually replies within 24 hours. Code is at github.com/akshatgg." },
+    { match: /stack|tech|tools|language|skill/i, sources: ['skills'],
+      text: "Backend and systems is the centre of gravity: FastAPI, Node.js, Express, Python, Java, PostgreSQL, MongoDB, Prisma, Redis and ClickHouse.\n\nObservability is the specialism — Prometheus, Grafana, Datadog, New Relic, OpenTelemetry, AWS CloudWatch, Loki, Tempo and Signoz. On infra: Docker, Kubernetes (Amazon EKS), AWS, GCP, and CI/CD pipelines he cut 20% off with build caching and artifact reuse.\n\nFrontend when a product needs one: React, Next.js, TypeScript, TailwindCSS. Plus Kotlin for the Android signage player and Three.js/WebGL for the 3D work." },
+    { match: /project|built|shipped|best work/i, sources: ['projects'], card: 'cosmic',
+      text: "Six are on the site, but the range is the interesting part.\n\nVibeMonitor is the serious one — production observability, ClickHouse ingestion, 15+ microservices. iTaxEasy is a tax filing and compliance platform where he re-architected the DB layer for a 60% faster query response and 30% lower server cost. Legal E-Library does advanced search across 10,000+ legal documents.\n\nThen there's Cosmic-Trek, a 3D solar-system simulator with 8+ celestial bodies, 50+ exoplanets and a physics-based satellite-launch sandbox — built, in his words, because it sounded fun." },
+    { match: /work with|personality|culture|team|like him/i, sources: ['about-me/voice'],
+      text: "His own summary is three lines: bias toward action, paranoid about latency, allergic to flaky tests.\n\nThe history backs that up. At Al-Zira he went from engineer to mentor in about five to six months, reviewing other frontend engineers' work. At PrepSaarthi he co-founded, owned product, hiring and the technical roadmap. At VibeMonitor he took the post-signup execution layer and scaled Playwright runs across a worker pool with self-healing selectors specifically to kill flaky tests.\n\nHe takes ownership of whole surfaces rather than tickets." },
+    { match: /experience|career|resume|cv|background|history/i, sources: ['experience'],
+      text: "Seven roles, most recent first.\n\nMark AI, Software Engineer, Jun 2026 to now — AI-native DOOH advertising platform. VibeMonitor, Software Engineer, Sep 2025 to Jun 2026 — Beryl test automation, ClickHouse ingestion, centralized observability. iTax Easy, full stack internship, Feb to Sep 2025 — 60% faster queries. Sakhi Women, freelance, early 2026 — ride-booking for 1500–2000 concurrent users, 70% lower query latency via B-tree indexing.\n\nEarlier: a Mark AI freelance engagement building the FastAPI ad-booking platform, PrepSaarthi as co-founder and technical lead, and Al-Zira Technology as frontend engineer then mentor." }
+  ],
+
+  FALLBACK: {
+    sources: [],
+    text: "That isn't in the knowledge base, and inventing a detail would be worse than admitting the gap.\n\nThe knowledge base covers his roles, the systems he's built, his stack and his projects. If it's outside that, akshatg9636@gmail.com reaches him directly and github.com/akshatgg has the code."
+  }
+};
+const MONO = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace";
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+// Asset paths are plain strings here, so the publish bundler declares them via
+// <meta name="ext-resource-dependency"> and hands back blob URLs on
+// window.__resources. Fall back to the raw path during normal editing.
+const RES_IDS = {
+  'static/assests/hall.png': 'img_vibemonitor',
+  'static/assests/itax.png': 'img_itax',
+  'static/assests/Elibrary.png': 'img_elibrary',
+  'static/assests/Cosmic.png': 'img_cosmic',
+  'static/assests/prep.png': 'img_prep',
+  'static/assests/anti.png': 'img_anti'
+};
+const asset = (path) => {
+  if (!path) return BLANK;
+  const res = (typeof window !== 'undefined' && window.__resources) || null;
+  const id = RES_IDS[path];
+  return (res && id && res[id]) || path;
+};
+
+class Component extends DCLogic {
+  state = {
+    typed: '', y: 0, docsOpen: false, activeId: 'home', markerPct: 0, activeIdx: -1,
+    messages: [], draft: '', phase: 'idle', focused: false, expanded: false,
+    latency: 0, tokens: 0, elapsed: 0, dock: null, closed: false, lightsHot: false,
+    vw: typeof window !== 'undefined' ? window.innerWidth : 1440, drawerOpen: false
+  };
+  rowEls = [];
+
+  // Stable refs — a fresh closure per render makes React fire ref(null) then
+  // ref(el) every time, which was nulling the measured nodes.
+  setParticlesEl = (el) => { if (el) this.particlesEl = el; };
+  setOrbEl = (el) => { if (el) this.orbEl = el; };
+  setScrollEl = (el) => { if (el) this.scrollEl = el; };
+  setInputEl = (el) => { if (el) this.inputEl = el; };
+  setTimelineEl = (el) => { if (el) this.timelineEl = el; };
+  setDockEl = (el) => { if (el) { this.dockEl = el; this.measureDock(); } };
+
+  componentDidMount() {
+    this.tickState = { roleIdx: 0, charIdx: 0, deleting: false };
+    this.tick();
+    this.onScroll = () => { this.setState({ y: window.scrollY }); this.updateTimeline(); };
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    this.onWinResize = () => { this.setState({ vw: window.innerWidth }); this.measureDock(); this.updateTimeline(); };
+    window.addEventListener('resize', this.onWinResize);
+    this.io = new IntersectionObserver((es) => {
+      es.forEach((e) => { if (e.isIntersecting) this.setState({ activeId: e.target.id }); });
+    }, { rootMargin: '-45% 0px -45% 0px' });
+    (D.SECTIONS || []).forEach((s) => { const el = document.getElementById(s.id); if (el) this.io.observe(el); });
+    this.startParticles();
+    this.startOrb();
+    this.loadHistory();
+    this.measureDock();
+    this.updateTimeline();
+    // the hero slot moves with scroll, resize and layout reflow; keep the docked
+    // panel pinned to it rather than relying on one-shot observers
+    const measureLoop = () => { this.measureDock(); this.measureRaf = requestAnimationFrame(measureLoop); };
+    measureLoop();
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timer); clearInterval(this.streamTimer); clearInterval(this.clockTimer);
+    cancelAnimationFrame(this.raf); cancelAnimationFrame(this.measureRaf); this.orbRunning = false;
+    if (this.io) this.io.disconnect();
+    if (this.dockRO) this.dockRO.disconnect();
+    window.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('resize', this.onWinResize);
+  }
+
+  componentDidUpdate() {
+    // only follow the transcript; never yank the empty-state greeting out of view
+    if (this.scrollEl && this.state.messages.length) this.scrollEl.scrollTop = this.scrollEl.scrollHeight;
+  }
+
+  // the ASK surface is position:fixed so it can expand; it tracks the hero slot's box
+  measureDock() {
+    if (!this.dockEl) return;
+    const r = this.dockEl.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const d = this.state.dock;
+    if (!d || Math.abs(d.top - r.top) > 0.5 || Math.abs(d.left - r.left) > 0.5 || Math.abs(d.width - r.width) > 0.5 || Math.abs(d.height - r.height) > 0.5) {
+      this.setState({ dock: { top: r.top, left: r.left, width: r.width, height: r.height } });
+    }
+  }
+
+  tick = () => {
+    const t = this.tickState, roles = D.ROLES || [''];
+    const cur = roles[t.roleIdx];
+    if (!t.deleting) {
+      this.setState({ typed: cur.slice(0, ++t.charIdx) });
+      if (t.charIdx === cur.length) { t.deleting = true; this.timer = setTimeout(this.tick, 1500); return; }
+    } else {
+      this.setState({ typed: cur.slice(0, --t.charIdx) });
+      if (t.charIdx === 0) { t.deleting = false; t.roleIdx = (t.roleIdx + 1) % roles.length; }
+    }
+    this.timer = setTimeout(this.tick, t.deleting ? 35 : 70);
+  };
+
+  updateTimeline() {
+    if (!this.timelineEl) return;
+    const vh = window.innerHeight;
+    let next = -1;
+    this.rowEls.forEach((el, i) => {
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const c = r.top + r.height / 2;
+      if (c < vh * 0.6 && r.bottom > vh * 0.2) next = i;
+    });
+    const r = this.timelineEl.getBoundingClientRect();
+    const p = (vh * 0.45 - r.top) / r.height;
+    this.setState({ markerPct: Math.min(100, Math.max(0, p * 100)), activeIdx: next });
+    this.measureDock();
+  }
+
+  startParticles() {
+    const canvas = this.particlesEl;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w = 0, h = 0, dots = [];
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.clientWidth; h = canvas.clientHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      dots = Array.from({ length: Math.min(45, Math.round((w * h) / 26000)) }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.45, vy: (Math.random() - 0.5) * 0.45,
+        r: 0.6 + Math.random() * 1.2
+      }));
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    const frame = () => {
+      ctx.clearRect(0, 0, w, h);
+      for (const d of dots) {
+        d.x += d.vx; d.y += d.vy;
+        if (d.x < 0 || d.x > w) d.vx *= -1;
+        if (d.y < 0 || d.y > h) d.vy *= -1;
+      }
+      for (let i = 0; i < dots.length; i++) for (let j = i + 1; j < dots.length; j++) {
+        const dist = Math.hypot(dots[i].x - dots[j].x, dots[i].y - dots[j].y);
+        if (dist < 150) {
+          ctx.strokeStyle = 'rgba(26,58,35,' + (0.22 * (1 - dist / 150)) + ')';
+          ctx.beginPath(); ctx.moveTo(dots[i].x, dots[i].y); ctx.lineTo(dots[j].x, dots[j].y); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = 'rgba(74,222,128,0.3)';
+      for (const d of dots) { ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill(); }
+      this.raf = requestAnimationFrame(frame);
+    };
+    frame();
+  }
+
+  async startOrb() {
+    const host = this.orbEl;
+    if (!host) return;
+    let THREE;
+    const res = (typeof window !== 'undefined' && window.__resources) || null;
+    // three.module.js is a single self-contained ESM file (no sub-imports), which
+    // is what the publish bundler can inline; window.__resources.three holds the
+    // blob URL once bundled.
+    const threeUrl = (res && res.three) || 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js';
+    try { THREE = await import(threeUrl); } catch (e) { return; }
+    const size = () => ({ w: host.clientWidth || 320, h: host.clientHeight || 320 });
+    let { w, h } = size();
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h);
+    renderer.setClearColor(0x000000, 0);
+    host.appendChild(renderer.domElement);
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, w / h, 0.1, 100);
+    camera.position.set(0, 0, 3.5);
+
+    const COUNT = Math.round(this.props.orbDensity ?? 3400);
+    const pos = new Float32Array(COUNT * 3), rnd = new Float32Array(COUNT);
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < COUNT; i++) {
+      const y = 1 - (i / (COUNT - 1)) * 2;
+      const r = Math.sqrt(Math.max(0, 1 - y * y)), th = golden * i;
+      pos[i * 3] = Math.cos(th) * r; pos[i * 3 + 1] = y; pos[i * 3 + 2] = Math.sin(th) * r;
+      rnd[i] = Math.random();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+
+    const uniforms = {
+      uTime: { value: 0 }, uEnergy: { value: 0 }, uPulse: { value: 0 },
+      uScale: { value: Math.min(1, h / 340) }, uColor: { value: new THREE.Color(0x4ade80) }
+    };
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        uniform float uTime; uniform float uEnergy; uniform float uPulse; uniform float uScale;
+        attribute float aRand; varying float vGlow;
+        void main() {
+          vec3 p = position;
+          float n = sin(p.x * 3.1 + uTime * 0.9) * sin(p.y * 2.7 + uTime * 1.15) * sin(p.z * 3.4 + uTime * 0.75);
+          float amp = 0.05 + uEnergy * 0.40 + uPulse * 0.16;
+          p += normalize(position) * n * amp;
+          p *= 1.0 + uPulse * 0.05;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          float dep = smoothstep(-4.7, -2.4, mv.z);
+          vGlow = (0.30 + abs(n) * 0.75 * (0.5 + uEnergy)) * (0.20 + 0.80 * dep);
+          gl_PointSize = (1.05 + aRand * 1.7 + uEnergy * 1.9) * (28.0 / -mv.z) * (0.6 + 0.4 * dep) * uScale;
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `
+        uniform vec3 uColor; varying float vGlow;
+        void main() {
+          vec2 c = gl_PointCoord - 0.5;
+          float d = length(c);
+          if (d > 0.5) discard;
+          float a = smoothstep(0.5, 0.05, d);
+          gl_FragColor = vec4(uColor * (0.34 + vGlow * 1.15), a * vGlow * 0.95);
+        }`
+    });
+
+    const group = new THREE.Group();
+    group.add(new THREE.Points(geo, mat));
+    const ringMat = new THREE.LineBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.22 });
+    for (const [rad, rx, rz] of [[1.55, 1.15, 0.4], [1.78, -0.55, 1.0]]) {
+      const pts = [];
+      for (let i = 0; i <= 128; i++) {
+        const a = (i / 128) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(a) * rad, 0, Math.sin(a) * rad));
+      }
+      const ring = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), ringMat);
+      ring.rotation.x = rx; ring.rotation.z = rz;
+      group.add(ring);
+    }
+    const shell = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.72, 1),
+      new THREE.MeshBasicMaterial({ color: 0x4ade80, wireframe: true, transparent: true, opacity: 0.07 })
+    );
+    group.add(shell);
+    scene.add(group);
+
+    const onResize = () => {
+      const s = size();
+      if (!s.w || !s.h) return;
+      w = s.w; h = s.h;
+      renderer.setSize(w, h);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+      uniforms.uScale.value = Math.min(1, h / 340);
+    };
+    window.addEventListener('resize', onResize);
+    if (window.ResizeObserver) { this.orbRO = new ResizeObserver(onResize); this.orbRO.observe(host); }
+
+    this.orbRunning = true;
+    let energy = 0, pulse = 0, t = 0;
+    const targets = { idle: 0.10, listening: 0.24, thinking: 0.85, speaking: 0.50 };
+    const spin = { idle: 0.0016, listening: 0.003, thinking: 0.011, speaking: 0.005 };
+    const loop = () => {
+      if (!this.orbRunning) return;
+      const phase = this.state.phase;
+      // the panel animates between docked and full-screen, so re-fit every frame
+      const cw = host.clientWidth, ch = host.clientHeight;
+      if (cw > 0 && ch > 0 && (cw !== w || ch !== h)) {
+        w = cw; h = ch;
+        renderer.setSize(w, h);
+        camera.aspect = w / h; camera.updateProjectionMatrix();
+        uniforms.uScale.value = Math.min(1, h / 340);
+      }
+      t += 0.016;
+      energy += ((targets[phase] ?? 0.06) - energy) * 0.06;
+      this.pulseTarget = (this.pulseTarget ?? 0) * 0.90;
+      pulse += (this.pulseTarget - pulse) * 0.25;
+      uniforms.uTime.value = t + energy * 1.6;
+      uniforms.uEnergy.value = energy;
+      uniforms.uPulse.value = pulse;
+      group.rotation.y += spin[phase] ?? 0.0016;
+      group.rotation.x = Math.sin(t * 0.19) * 0.16;
+      shell.rotation.y -= 0.004;
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    };
+    loop();
+  }
+
+  openDB() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open('akshat-ask', 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains('turns')) req.result.createObjectStore('turns', { keyPath: 'i', autoIncrement: true });
+      };
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async loadHistory() {
+    try {
+      const db = await this.openDB();
+      const turns = await new Promise((res, rej) => {
+        const r = db.transaction('turns').objectStore('turns').getAll();
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+      if (turns.length) this.setState({ messages: turns.map((t) => ({ ...t, streaming: false })) });
+    } catch (e) {}
+  }
+  async persist(m) { try { const db = await this.openDB(); db.transaction('turns', 'readwrite').objectStore('turns').add(m); } catch (e) {} }
+  async clearHistory() { try { const db = await this.openDB(); db.transaction('turns', 'readwrite').objectStore('turns').clear(); } catch (e) {} }
+
+  ask = (text) => {
+    const content = (text ?? this.state.draft).trim();
+    if (!content || this.state.phase === 'thinking' || this.state.phase === 'speaking') return;
+    const userMsg = { role: 'user', content };
+    const next = [...this.state.messages, userMsg];
+    this.setState({ messages: next, draft: '', phase: 'thinking', tokens: 0, elapsed: 0 });
+    this.persist(userMsg);
+    if (this.inputEl) this.inputEl.style.height = 'auto';
+    const t0 = performance.now();
+    this.clockTimer = setInterval(() => this.setState({ elapsed: Math.round(performance.now() - t0) }), 90);
+    const apiBase = (this.props.apiBase ?? '').trim();
+    if (apiBase) this.streamFromApi(apiBase, next, t0); else this.streamLocally(next, t0);
+  };
+
+  async streamFromApi(apiBase, history, t0) {
+    try {
+      const res = await fetch(apiBase.replace(/\/$/, '') + '/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history.map((m) => ({ role: m.role, content: m.content })) })
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let answer = '';
+      this.beginAssistant(t0);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        answer += dec.decode(value, { stream: true });
+        this.updateAssistant(answer);
+      }
+      this.finishAssistant(answer);
+    } catch (e) {
+      this.finishAssistant('The assistant is unavailable right now. Akshat can be reached directly at akshatg9636@gmail.com.');
+    }
+  }
+
+  streamLocally(history, t0) {
+    const q = history[history.length - 1].content;
+    const hit = (D.CANNED || []).find((c) => c.match.test(q)) ?? D.FALLBACK;
+    const words = hit.text.split(' ');
+    setTimeout(() => {
+      this.beginAssistant(t0, hit.sources, hit.card ? (D.PROJECT_CARDS || {})[hit.card] : null);
+      let i = 0;
+      this.streamTimer = setInterval(() => {
+        i += 1 + Math.floor(Math.random() * 2);
+        if (i >= words.length) { clearInterval(this.streamTimer); this.finishAssistant(hit.text); return; }
+        this.updateAssistant(words.slice(0, i).join(' '));
+      }, 42);
+    }, 620 + Math.random() * 380);
+  }
+
+  beginAssistant(t0, sources = [], card = null) {
+    clearInterval(this.clockTimer);
+    this.setState({
+      phase: 'speaking', latency: Math.round(performance.now() - t0),
+      messages: [...this.state.messages, { role: 'assistant', content: '', streaming: true, sources, card }]
+    });
+  }
+  updateAssistant(text) {
+    this.pulseTarget = 1;
+    const msgs = this.state.messages.slice();
+    msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: text };
+    this.setState({ messages: msgs, tokens: Math.round(text.length / 3.7) });
+  }
+  finishAssistant(text) {
+    clearInterval(this.clockTimer);
+    const msgs = this.state.messages.slice();
+    const last = { ...msgs[msgs.length - 1], content: text, streaming: false };
+    msgs[msgs.length - 1] = last;
+    this.setState({ messages: msgs, phase: 'idle', tokens: Math.round(text.length / 3.7) });
+    this.persist({ role: 'assistant', content: text, sources: last.sources, card: last.card });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const { y, docsOpen, activeId, markerPct, activeIdx, messages, draft, phase, focused, expanded, latency, tokens, elapsed, dock, closed, lightsHot, vw, drawerOpen } = s;
+    const narrow = vw < 1080;
+    const wide = !narrow;
+    const busy = phase === 'thinking' || phase === 'speaking';
+    const surface = 'background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06);';
+    const stateLabel = { idle: 'idle', listening: 'listening', thinking: 'retrieving', speaking: 'answering' }[phase];
+    const dotColor = phase === 'thinking' ? '#fbbf24' : '#4ade80';
+    const hasApi = !!(this.props.apiBase ?? '').trim();
+
+    const starters = [
+      { text: 'What did he build at Mark AI?', icon: 'mdi:billboard' },
+      { text: 'Explain his ClickHouse work', icon: 'mdi:database-outline' },
+      { text: 'Is he open to work right now?', icon: 'mdi:briefcase-search-outline' },
+      { text: "What's he like to work with?", icon: 'mdi:account-heart-outline' }
+    ].map((it) => ({
+      ...it,
+      onClick: () => this.ask(it.text),
+      style: 'text-align: left; display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; ' + surface +
+        ' color: rgba(231,231,231,0.78); font-size: ' + (expanded ? '14px' : '13px') + '; line-height: 1.45; cursor: pointer; letter-spacing: 0.01em; transition: border-color .25s ease, background-color .25s ease, transform .25s ease;'
+    }));
+
+    return {
+      typed: s.typed, docsOpen, expanded, draft, narrow, wide, drawerOpen,
+      menuIcon: drawerOpen ? 'mdi:close' : 'mdi:menu',
+      toggleDrawer: () => this.setState({ drawerOpen: !drawerOpen }),
+      closeDrawer: () => this.setState({ drawerOpen: false }),
+      askFromDrawer: () => { this.setState({ drawerOpen: false, closed: false, expanded: true }); setTimeout(() => this.inputEl && this.inputEl.focus(), 300); },
+      askPillStyle: 'display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; flex-shrink: 0; gap: 8px; border-radius: 6px; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; font-size: 14px; font-family: ' + MONO + '; cursor: pointer; transition: background-color .25s ease, border-color .25s ease; ' +
+        (narrow ? 'padding: 8px 11px;' : 'padding: 7px 16px 7px 12px;'),
+      navStyle: narrow ? 'display: none;' : 'display: flex; align-items: center; gap: 4px;',
+      docsWrapStyle: narrow ? 'display: none;' : 'position: relative;',
+      particlesRef: this.setParticlesEl,
+      orbRef: this.setOrbEl,
+      scrollRef: this.setScrollEl,
+      inputRef: this.setInputEl,
+      timelineRef: this.setTimelineEl,
+      dockRef: this.setDockEl,
+      scrollToTop: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+      openDocs: () => this.setState({ docsOpen: true }),
+      closeDocs: () => this.setState({ docsOpen: false }),
+      toggleDocs: () => this.setState({ docsOpen: !docsOpen }),
+      handleSubmit: (e) => e.preventDefault(),
+      expand: () => { this.setState({ closed: false, expanded: true }); setTimeout(() => this.inputEl && this.inputEl.focus(), 260); },
+      collapse: () => this.setState({ expanded: false }),
+      toggleExpand: () => this.setState({ expanded: !expanded }),
+      close: () => this.setState({ closed: true, expanded: false }),
+      reopen: () => this.setState({ closed: false }),
+      closed,
+      hoverLights: () => this.setState({ lightsHot: true }),
+      unhoverLights: () => this.setState({ lightsHot: false }),
+      lightGlyphStyle: 'font-size: 8px; line-height: 1; color: rgba(0,0,0,0.65); font-weight: 700; transition: opacity .15s; opacity: ' + (lightsHot ? '1' : '0') + ';',
+
+      headerStyle: 'position: fixed; z-index: 50; width: 100%; height: 80px; color: #fff; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; transition: all .3s; padding: 0 ' + (narrow ? '20px' : '48px') + '; ' +
+        (y > 0 ? 'background: rgba(0,0,0,0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(255,255,255,0.05);' : 'background: transparent; border-bottom: 1px solid transparent;'),
+      chevronStyle: 'font-size: 16px; transition: transform .2s;' + (docsOpen ? ' transform: rotate(180deg);' : ''),
+      backToTopStyle: 'position: fixed; bottom: 24px; right: 24px; z-index: 50; padding: 12px; border-radius: 9999px; ' + surface +
+        ' color: rgba(231,231,231,0.78); cursor: pointer; display: flex; transition: all .3s; ' +
+        (y > 600 && !expanded ? 'opacity: 1; transform: translateY(0);' : 'opacity: 0; transform: translateY(12px); pointer-events: none;'),
+
+      navItems: (D.SECTIONS || []).map((it) => ({
+        name: it.name, href: '#' + it.id, active: activeId === it.id,
+        style: 'position: relative; padding: 8px 14px; font-size: 14px; font-family: ' + MONO + '; transition: color .2s; ' +
+          (activeId === it.id ? 'color: #fff;' : 'color: rgba(231,231,231,0.55);'),
+        drawerStyle: 'padding: 12px 16px; border-radius: 6px; font-family: ' + MONO + '; font-size: 16px; transition: all .2s; ' +
+          (activeId === it.id ? 'color: #fff; background: rgba(255,255,255,0.05);' : 'color: rgba(231,231,231,0.55);')
+      })),
+
+      stats: D.STATS || [],
+      facts: D.FACTS || [],
+      wins: D.WINS || [],
+      channels: D.CHANNELS || [],
+      techs: D.TECHS || [],
+      marquee: [...(D.MARQUEE || []), ...(D.MARQUEE || [])],
+      projects: (D.PROJECTS || []).map((p) => ({ ...p, image: asset(p.image), codeLabel: p.isPrivate ? 'Private' : 'Code' })),
+
+      experiences: (D.EXPERIENCES || []).map((e, i) => {
+        const isLeft = i % 2 === 0;
+        const st = i === activeIdx ? 'active' : (activeIdx > -1 && i < activeIdx ? 'past' : 'future');
+        return {
+          ...e,
+          ref: (el) => { this.rowEls[i] = el; },
+          isActive: st === 'active',
+          hasSite: !!e.website && e.website !== '#',
+          rowStyle: 'position: relative; display: flex; align-items: stretch; margin-bottom: 56px; ' + (isLeft ? 'justify-content: flex-start;' : 'justify-content: flex-end;'),
+          colStyle: 'width: 50%; transition: all .7s; box-sizing: border-box; ' + (isLeft ? 'padding-right: 40px;' : 'padding-left: 40px;'),
+          dotStyle: 'position: relative; border-radius: 9999px; transition: all .5s ease-out; ' +
+            (st === 'active' ? 'width: 16px; height: 16px; background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,0.18);'
+              : st === 'past' ? 'width: 10px; height: 10px; background: rgba(74,222,128,0.8);'
+              : 'width: 10px; height: 10px; background: #000; border: 1px solid rgba(255,255,255,0.2);'),
+          cardStyle: 'border: 1px solid rgba(255,255,255,0.06); background: rgba(10,10,10,0.6); backdrop-filter: blur(10px); border-radius: 12px; padding: 24px; transition: all .5s ease-out; ' +
+            (st === 'active' ? 'border-color: rgba(74,222,128,0.35); box-shadow: 0 0 0 1px rgba(74,222,128,0.08), 0 18px 40px -22px rgba(74,222,128,0.25); transform: translateY(-2px);'
+              : st === 'past' ? 'opacity: 0.55; filter: saturate(0.85);' : 'opacity: 0.92;'),
+          iconBoxStyle: 'padding: 8px; border-radius: 6px; border: 1px solid; transition: all .5s; ' +
+            (st === 'active' ? 'background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3);' : 'background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.05);'),
+          iconStyle: 'font-size: 20px; transition: color .5s; color: ' + (st === 'active' ? '#4ade80' : 'rgba(231,231,231,0.78)') + ';'
+        };
+      }),
+
+      spineStyle: 'pointer-events: none; position: absolute; left: 50%; transform: translateX(-50%); top: 8px; width: 1px; background: #4ade80; transition: height .2s ease-out; height: ' + markerPct + '%; max-height: calc(100% - 1rem);',
+
+      // ── ASK surface ──
+      backdropStyle: 'position: fixed; inset: 0; z-index: 90; background: rgba(2,2,2,0.82); backdrop-filter: blur(6px); transition: opacity .35s ease; ' +
+        (expanded ? 'opacity: 1;' : 'opacity: 0; pointer-events: none;'),
+
+      askSurfaceStyle: 'position: fixed; z-index: 100; display: flex; flex-direction: column; overflow: hidden; ' +
+        'background: rgba(8,8,8,0.94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.08); letter-spacing: 0.02em; ' +
+        'transition: top .45s cubic-bezier(0.4,0,0.2,1), left .45s cubic-bezier(0.4,0,0.2,1), width .45s cubic-bezier(0.4,0,0.2,1), height .45s cubic-bezier(0.4,0,0.2,1), border-radius .45s, box-shadow .45s, opacity .3s ease, transform .3s cubic-bezier(0.4,0,0.2,1); ' +
+        (closed ? 'opacity: 0; transform: scale(0.94); pointer-events: none; ' : 'opacity: 1; transform: scale(1); ') +
+        (expanded
+          ? 'top: 4vh; left: 6vw; width: 88vw; height: 92vh; border-radius: 18px; box-shadow: 0 60px 120px -40px rgba(0,0,0,0.9), 0 0 0 1px rgba(74,222,128,0.12);'
+          : dock
+            ? 'top: ' + dock.top + 'px; left: ' + dock.left + 'px; width: ' + dock.width + 'px; height: ' + dock.height + 'px; border-radius: 16px; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);'
+            : 'top: 140px; right: 40px; left: auto; width: 420px; height: 520px; border-radius: 16px; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);'),
+
+      chromeLabel: expanded ? 'ask.akshat — ' + stateLabel : 'ask.akshat',
+      expandIcon: expanded ? 'mdi:arrow-collapse' : 'mdi:arrow-expand',
+      headerDotStyle: 'width: 7px; height: 7px; border-radius: 9999px; display: block; background: ' + dotColor + '; box-shadow: 0 0 8px ' + dotColor + '; transition: background .3s;',
+      hasHistory: messages.length > 0,
+      resetChat: () => { this.clearHistory(); this.setState({ messages: [], phase: 'idle', draft: '' }); },
+
+      askBodyStyle: 'flex: 1 1 0%; min-height: 0; display: flex; ' + (expanded ? 'flex-direction: row;' : 'flex-direction: column;'),
+
+      orbPaneStyle: expanded
+        ? 'width: 360px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; overflow-y: auto; overflow-x: hidden;'
+        : messages.length
+          ? 'flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 8px 0 0;'
+          : 'flex: 0 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 10px 0 2px;',
+      orbBoxStyle: expanded
+        ? 'position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 320px; min-height: 150px; flex: 0 1 320px;'
+        : messages.length
+          ? 'position: relative; width: 52px; height: 52px; flex: 0 0 auto;'
+          : 'position: relative; width: 158px; height: 158px; flex: 0 1 158px; min-height: 78px;',
+
+      telemetry: [
+        { label: 'model', value: hasApi ? 'flash-lite' : 'demo' },
+        { label: 'state', value: stateLabel },
+        { label: 'first token', value: latency ? latency + 'ms' : '—' },
+        { label: 'tokens out', value: tokens ? '~' + tokens : '—' }
+      ],
+
+      scrollAreaStyle: 'flex: 1 1 0%; overflow-y: auto; ' + (expanded ? 'padding: 32px 0 20px;' : 'padding: 4px 0 14px;'),
+      convoInnerStyle: 'width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: ' + (expanded ? '26px' : '18px') + '; ' +
+        (expanded ? 'max-width: 760px; margin: 0 auto; padding: 0 40px;' : 'padding: 0 20px;'),
+
+      isEmpty: messages.length === 0,
+      thinking: phase === 'thinking',
+      thinkingLabel: 'searching the knowledge base · ' + elapsed + 'ms',
+      greetingStyle: 'font-weight: 700; color: #f5f5f5; letter-spacing: -0.02em; line-height: 1.12; font-size: ' + (expanded ? '42px' : '24px') + ';',
+      startersGridStyle: 'display: grid; gap: 9px; ' + (expanded ? 'grid-template-columns: 1fr 1fr;' : 'grid-template-columns: 1fr;'),
+      starters,
+
+      messages: messages.map((m) => ({
+        ...m,
+        isUser: m.role === 'user',
+        isAssistant: m.role === 'assistant',
+        paragraphs: m.role === 'assistant' ? m.content.split('\n\n').filter(Boolean) : [],
+        hasSources: m.role === 'assistant' && !m.streaming && !!(m.sources && m.sources.length),
+        sources: m.sources || [],
+        card: !m.streaming ? (m.card || null) : null,
+        cardImage: (!m.streaming && m.card && m.card.image) ? asset(m.card.image) : BLANK,
+        cardThumbStyle: 'width: 110px; flex-shrink: 0; position: relative; overflow: hidden; border-right: 1px solid rgba(255,255,255,0.06); background-size: cover; background-position: center; background-image: url(' + ((!m.streaming && m.card && m.card.image) ? asset(m.card.image) : BLANK) + ');',
+        textStyle: 'line-height: 1.7; color: rgba(231,231,231,0.86); text-wrap: pretty; font-size: ' + (expanded ? '15.5px' : '13.5px') + ';',
+        bubbleStyle: 'max-width: 82%; background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.22); border-radius: 14px 14px 4px 14px; padding: 11px 15px; line-height: 1.55; color: #f0fdf4; text-wrap: pretty; font-size: ' + (expanded ? '15px' : '13.5px') + ';',
+        rowStyle: 'display: flex; animation: ask-rise .45s cubic-bezier(0.22,1,0.36,1) both; ' + (m.role === 'user' ? 'justify-content: flex-end;' : 'justify-content: flex-start;'),
+        avatarStyle: 'width: 26px; height: 26px; flex-shrink: 0; border-radius: 9999px; border: 1px solid rgba(74,222,128,0.35); display: flex; align-items: center; justify-content: center; background: rgba(74,222,128,0.08);' +
+          (m.streaming ? ' animation: ask-bob 2s ease-in-out infinite;' : '')
+      })),
+
+      showFollowUps: expanded && messages.length > 0 && !busy,
+      followUps: ['Show me his best project', "What's his tech stack?", 'Walk me through his experience']
+        .map((text) => ({ text, onClick: () => this.ask(text) })),
+
+      composerWrapStyle: 'flex-shrink: 0; position: relative; background: rgba(8,8,8,0.98); ' + (expanded ? 'padding: 4px 40px 24px;' : 'padding: 4px 20px 16px;'),
+      composerInnerStyle: 'position: relative; width: 100%; margin: 0 auto; ' + (expanded ? 'max-width: 760px;' : ''),
+
+      composerStyle: 'display: flex; align-items: flex-end; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 14px; background: rgba(14,14,14,0.9); transition: border-color .25s ease, box-shadow .25s ease; border: 1px solid ' +
+        (focused ? 'rgba(74,222,128,0.45); box-shadow: 0 0 0 4px rgba(74,222,128,0.07);' : 'rgba(255,255,255,0.08);'),
+      sendStyle: 'flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; border: none; transition: all .2s; ' +
+        (draft.trim() && !busy ? 'background: #4ade80; color: #000; cursor: pointer;' : 'background: rgba(255,255,255,0.05); color: rgba(231,231,231,0.3); cursor: default;'),
+
+      hintLine: expanded ? 'Enter to send · Shift+Enter for a new line' : 'Enter to send',
+      modelLine: hasApi ? 'gemini-3.5-flash-lite' : 'demo responder',
+
+      onDraft: (e) => {
+        const el = e.target;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        this.setState({ draft: el.value, phase: busy ? phase : (el.value ? 'listening' : 'idle') });
+      },
+      onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.ask(); } },
+      onFocus: () => this.setState({ focused: true }),
+      onBlur: () => this.setState({ focused: false }),
+      send: () => this.ask()
+    };
+  }
+}
+
+</script>
+</body>
+</html>

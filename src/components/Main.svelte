@@ -7,6 +7,7 @@
 	import Contact from './Contact.svelte';
 	import Intro from './Intro.svelte';
 	import Experience from './Experience.svelte';
+	import Ask from './Ask.svelte';
 
 	export let sections = [];
 	export let activeSection;
@@ -63,3 +64,7 @@
 		</section>
 	{/each}
 </main>
+
+<!-- Fixed-position: lives outside the section flow so it can animate from the
+     hero slot out to full screen. -->
+<Ask />

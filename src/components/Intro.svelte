@@ -1,8 +1,12 @@
 <script>
-	import { Canvas } from '@threlte/core';
-	import Scene from './Scene.svelte';
 	import Icon from '@iconify/svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import { dockEl, askClosed } from '../lib/ask/store.js';
+
+	// The ASK panel is position:fixed so it can animate out to full screen; this
+	// slot is only a placeholder whose box the panel tracks while docked.
+	let slotEl;
+	$: dockEl.set(slotEl);
 
 	const roles = [
 		'Software Engineer',
@@ -99,18 +103,15 @@
 	</div>
 
 	<div class="relative w-full h-full hidden lg:flex flex-col items-center justify-center gap-5 z-0">
-		<div class="w-full max-w-md aspect-square relative">
-			<div class="absolute inset-0 rounded-2xl surface overflow-hidden">
-				<Canvas>
-					<Scene />
-				</Canvas>
-			</div>
-			<div class="absolute top-3 left-3 flex gap-1.5 z-10">
-				<span class="w-2.5 h-2.5 rounded-full bg-white/15"></span>
-				<span class="w-2.5 h-2.5 rounded-full bg-white/15"></span>
-				<span class="w-2.5 h-2.5 rounded-full bg-white/15"></span>
-			</div>
-			<div class="absolute top-3 right-4 font-mono text-[11px] text-muted z-10">akshat_engine.ts</div>
+		<div bind:this={slotEl} class="ask-slot">
+			{#if $askClosed}
+				<button class="ask-reopen" on:click={() => askClosed.set(false)}>
+					<span class="ask-reopen-icon">
+						<Icon icon="mage:message-dots-round" width="20" style="color: #4ade80;" />
+					</span>
+					<span class="font-mono text-[13px]">reopen ask.akshat</span>
+				</button>
+			{/if}
 		</div>
 
 		<div class="grid grid-cols-2 gap-3 w-full max-w-md">
@@ -142,6 +143,44 @@
 </section>
 
 <style>
+	.ask-slot {
+		width: 100%;
+		max-width: 448px;
+		height: 560px;
+		max-height: 62vh;
+		position: relative;
+	}
+	.ask-reopen {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 14px;
+		border-radius: 16px;
+		background: rgba(10, 10, 10, 0.35);
+		border: 1px dashed rgba(255, 255, 255, 0.1);
+		color: rgba(231, 231, 231, 0.55);
+		cursor: pointer;
+		transition: border-color 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+	}
+	.ask-reopen:hover {
+		border-color: rgba(74, 222, 128, 0.4);
+		background: rgba(15, 20, 16, 0.5);
+		color: rgba(231, 231, 231, 0.78);
+	}
+	.ask-reopen-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 9999px;
+		border: 1px solid rgba(74, 222, 128, 0.3);
+		background: rgba(74, 222, 128, 0.08);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
 	.scroll-pulse {
 		animation: scroll-pulse 2.2s cubic-bezier(0.55, 0.05, 0.45, 0.95) infinite;
 	}
