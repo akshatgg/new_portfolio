@@ -1,68 +1,98 @@
 # portfolio-backend
 
-The chat API behind the portfolio. A Next.js app with **no frontend** — two API
-routes and nothing else. The SvelteKit site at the repo root calls it.
+The chat agent behind the portfolio. A Next.js app with **no frontend** — API routes
+only. The SvelteKit site at the repo root calls it.
 
-## Why it's a separate app
-
-The Svelte app is static and public; this holds a Gemini API key and must stay
-server-side. Keeping them apart means the key never enters a browser bundle, and
-the API can be reused or redeployed without touching the portfolio.
+It is a **tool-calling agent**, not a stuffed prompt. The system prompt is a short
+orientation; the actual facts are fetched at question time from Akshat's live Confluence
+space and the PDFs in this repo. Edit a Confluence page and the next answer reflects it —
+no redeploy.
 
 ## Architecture
 
 ```
-Browser (Svelte)                       This service                 Google
-──────────────────                     ─────────────                ──────
+Browser (Svelte)                  This service                   External
+──────────────────                ─────────────                  ────────
 IndexedDB: chat history
       │
       │ POST /api/chat
       │ { messages: [...entire history...] }
       ▼
-                              validate → CORS → rate limit
-                              system prompt = data/about-me.md
-                                      │
-                                      ├──────────────────────────▶ Gemini
-                                      ◀────────── streamed text ───┘
-      ◀─── text/plain stream ─────────┘
+                        validate → CORS → rate limit
+                                  │
+                                  ▼
+                        ┌── agent loop (max 4 rounds) ──┐
+                        │                                │
+                        │   Gemini  ──────────────────────────▶ Gemini API
+                        │     │ wants a tool?             │
+                        │     ▼                           │
+                        │   search_confluence      ───────────▶ Confluence
+                        │   read_confluence_page   ───────────▶ (live)
+                        │   list_documents         ───────────▶
+                        │   read_resume            ──▶ data/docs/*.pdf
+                        │     │                           │
+                        │     └── results back to Gemini ─┘
+                        └────────────────────────────────┘
+                                  │
+      ◀─── text/plain stream ─────┘
       │
    append turn to IndexedDB
 ```
 
-**This service is stateless.** It stores nothing. Conversation history lives in
-the browser's IndexedDB and is replayed on every request, which is why
-`/api/chat` takes the whole `messages` array rather than a session id.
+**This service is stateless.** It stores nothing. Conversation history lives in the
+browser's IndexedDB and is replayed on every request, which is why `/api/chat` takes the
+whole `messages` array rather than a session id.
+
+## The tools
+
+| Tool | Purpose |
+|---|---|
+| `list_documents` | Every Confluence page (title + id) and the available PDFs. Cheap orientation when the model doesn't know where to look. |
+| `search_confluence(query)` | CQL full-text search across the space. Returns titles, ids, excerpts. |
+| `read_confluence_page(page_id)` | Full text of one page, converted from Confluence storage format to readable Markdown. |
+| `read_resume(document)` | Text of `resume` or `cv`, extracted from the PDFs in `data/docs/`. |
+
+Tool results are capped at 24k characters each, and the loop stops after 4 rounds — both
+bound latency and spend if the model fails to converge.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env.local     # then fill in GEMINI_API_KEY
-npm run dev                    # http://localhost:4000
+cp .env.example .env     # fill in the keys below
+npm run dev              # http://localhost:4000
 ```
-
-Get a key from [Google AI Studio](https://aistudio.google.com/apikey). It is a
-Gemini Developer API key — it bills to Google AI, not to a Google Cloud project.
 
 ### Environment variables
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `GEMINI_API_KEY` | yes | Gemini Developer API key. Server-side only. |
-| `ALLOWED_ORIGINS` | in production | Comma-separated origins permitted to call the API. Without it, only localhost dev servers are allowed. |
+| `GEMINI_API_KEY` | yes | Gemini Developer API key ([AI Studio](https://aistudio.google.com/apikey)). |
+| `ATLASSIAN_EMAIL` | for live docs | The Atlassian account email — `akshatg9636@gmail.com`. |
+| `ATLASSIAN_API_TOKEN` | for live docs | [Create one here](https://id.atlassian.com/manage-profile/security/api-tokens). |
+| `ALLOWED_ORIGINS` | in production | Comma-separated origins permitted to call the API. Without it, only localhost. |
 | `GEMINI_MODEL` | no | Defaults to `gemini-3.5-flash-lite`. |
 | `RATE_LIMIT_PER_MINUTE` | no | Per-IP cap, default 10. |
+| `CONFLUENCE_CACHE_TTL_MS` | no | Per-instance cache lifetime, default 15 min. |
+
+**No Confluence app is required** — not a Marketplace app, not Forge, not OAuth. A plain
+API token over Basic auth is enough, because this is one account reading its own space.
+Apps are only needed when third parties authorise an integration.
+
+If the Atlassian variables are missing the agent still runs: it falls back to the static
+`data/about-me.md` snapshot and is told not to call the Confluence tools.
 
 ## API
 
 ### `GET /api/health`
 
-Deploy check. Confirms the key is present and the knowledge base loads. Returns
-503 if either is missing. Never returns the key.
+Exercises every dependency — Gemini config, the system prompt, a real Confluence call, and
+PDF extraction. Returns 503 if any fails. Never returns a credential.
 
 ```json
-{ "ok": true, "model": "gemini-3.5-flash-lite", "geminiKeyConfigured": true,
-  "knowledgeChars": 14832, "knowledgeApproxTokens": 3708 }
+{ "ok": true, "model": "gemini-3.5-flash-lite", "mode": "live-confluence",
+  "confluence": { "ok": true, "pageCount": 10 },
+  "documents": { "ok": true, "extractedChars": { "resume": 5278, "cv": 13060 } } }
 ```
 
 ### `POST /api/chat`
@@ -76,11 +106,11 @@ Deploy check. Confirms the key is present and the knowledge base loads. Returns
 - `role` is `user` or `assistant`; the last message must be from `user`.
 - Max 20 messages per request, max 2,000 characters each.
 
-**Response** — a `text/plain` stream, not JSON and not SSE. Read it with a
-standard reader; no event parsing needed.
+**Response** — a `text/plain` stream, not JSON and not SSE. Read it with a standard reader;
+no event parsing needed.
 
-**Errors** are JSON: `400` invalid body, `403` origin not allowed, `429` rate
-limited (with `Retry-After`), `502` upstream failure.
+**Errors** are JSON: `400` invalid body, `403` origin not allowed, `429` rate limited
+(with `Retry-After`).
 
 ### Calling it from SvelteKit
 
@@ -105,52 +135,46 @@ while (true) {
 }
 ```
 
-Then append `{ role: 'assistant', content: answer }` to IndexedDB alongside the
-user turn.
+Then append `{ role: 'assistant', content: answer }` to IndexedDB alongside the user turn.
 
-## The knowledge base
+## Content sources
 
-`data/about-me.md` is the single source of truth for what the assistant knows.
-It is Markdown rather than JSON because it goes straight into the system prompt,
-and Markdown costs far fewer tokens than the equivalent braces and quotes.
+| What | Where | Refresh |
+|---|---|---|
+| Confluence pages | `akshatg9636.atlassian.net`, space `~7120200844476cfa4946c3b51daf1ada4a318d` | Edit the page — live, no deploy |
+| Résumé / CV | `data/docs/resume.pdf`, `data/docs/cv.pdf` (copies of `static/Akshat.pdf` and `static/Akshat_CV.pdf`) | Replace the file and redeploy |
+| Behaviour rules | `data/system-prompt.md` | Edit and redeploy |
+| Offline fallback | `data/about-me.md` | Only used when Atlassian credentials are absent |
 
-Edit it by hand for small corrections. Its final section, **Answering
-guidance**, is instruction rather than fact — it tells the model to admit gaps,
-stay in third person, and avoid three specific stale résumé claims.
+`data/system-prompt.md` also carries two standing corrections: don't quote a Mark AI fleet
+size, and don't describe the Android player as using a WebSocket. Both are stale résumé
+claims, and the model is told to avoid them even if it reads them in a document.
 
-It is read from disk at runtime, so `next.config.mjs` traces `./data/**` into
-the deployed function. Moving that file means updating that config.
+Everything under `data/` is traced into the deployed function by `next.config.mjs`.
 
 ## Deploying
 
-This lives in a subdirectory of the portfolio repo, so Vercel needs pointing at
-it:
+Already wired: the Vercel project `portfolio-backend` is Git-connected to this repo with
+**Root Directory `backend`**, so a push to `master` deploys it. `vercel.json` sets an
+ignore command so pushes that touch nothing under `backend/` skip the build.
 
-1. New Vercel project from the same repo.
-2. **Root Directory** → `backend`.
-3. Add `GEMINI_API_KEY` and `ALLOWED_ORIGINS` as environment variables.
-4. Set an **Ignored Build Step** so pushes that only touch the Svelte app don't
-   rebuild this one:
-   ```
-   git diff --quiet HEAD^ HEAD -- .
-   ```
+Root Directory is not settable from the Vercel CLI — it was set via
+`PATCH https://api.vercel.com/v9/projects/{id}`.
 
-Then add the deployed origin to the Svelte app as the API base URL, and add the
-Svelte app's origin to `ALLOWED_ORIGINS` here.
+## Cost and latency
 
-## Cost
+`gemini-3.5-flash-lite` with a ~3.4k-token system prompt. A question needing two tool
+rounds makes three model calls and pulls up to ~24k characters of document text, so expect
+roughly a cent per conversation rather than a tenth of one — the tools trade tokens for
+accuracy and currency.
 
-`gemini-3.5-flash-lite` is $0.10 per million input tokens, $0.40 per million
-output. With a ~4k-token knowledge base and short answers that is roughly
-**$0.001 per message** — about a dollar per thousand conversations.
-
-No context caching: Google charges cache storage per hour, which for sporadic
-portfolio traffic costs more than just resending the prompt.
+Confluence responses are cached per serverless instance for 15 minutes, so a burst of
+questions hits Atlassian once, not once per message.
 
 ## Rate limiting
 
-`lib/ratelimit.ts` is an in-memory fixed window, so the limit is per serverless
-instance rather than global — a visitor spread across instances gets a higher
-effective cap than configured. That is enough to stop a script hammering the
-endpoint in a loop, which is its actual job. If it ever needs to be exact, swap
-the `Map` for Upstash Redis; the function signature won't change.
+`lib/ratelimit.ts` is an in-memory fixed window, so the limit is per serverless instance
+rather than global — a visitor spread across instances gets a higher effective cap than
+configured. That is enough to stop a script hammering the endpoint in a loop, which is its
+actual job. If it ever needs to be exact, swap the `Map` for Upstash Redis; the function
+signature won't change.

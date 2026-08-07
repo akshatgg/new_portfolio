@@ -1,17 +1,24 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type Content, type Part } from '@google/genai';
 import { buildSystemInstruction } from '@/lib/knowledge';
 import { corsHeaders, isAllowedOrigin } from '@/lib/cors';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
+import { declarations, execute } from '@/lib/tools';
 
-// Needs the Node runtime: the knowledge base is read from disk with node:fs.
+// Node runtime: the tools read PDFs and the prompt from disk.
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+// Tool rounds mean several sequential model calls, so allow more wall clock
+// than a single-shot completion would need.
+export const maxDuration = 60;
 
 // Pinned deliberately. `gemini-flash-lite-latest` also works and auto-upgrades,
 // but a pinned id fails loudly when it is retired rather than silently changing
 // behaviour — 2.5-flash-lite was withdrawn from new users exactly this way.
 const MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite';
 const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 10);
+
+// Bound on the agent loop. Each round is a model call plus its tool calls, so
+// this caps both latency and spend if the model ever fails to converge.
+const MAX_TOOL_ROUNDS = 4;
 
 // Guardrails on what a client may send. The browser holds conversation history
 // in IndexedDB and replays it on every request, so these caps also bound how
@@ -109,43 +116,78 @@ export async function POST(request: Request) {
   }
 
   // Gemini calls the assistant turn "model"; everything else maps straight over.
-  const contents = parsed.map((message) => ({
+  const contents: Content[] = parsed.map((message) => ({
     role: message.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: message.content }],
   }));
 
-  let stream;
-  try {
-    stream = await genai().models.generateContentStream({
-      model: MODEL,
-      contents,
-      config: {
-        systemInstruction: buildSystemInstruction(),
-        maxOutputTokens: 800,
-        temperature: 0.7,
-      },
-    });
-  } catch (error) {
-    console.error('[chat] Gemini request failed:', error);
-    return json({ error: 'The assistant is unavailable right now.' }, 502, headers);
-  }
+  const config = {
+    systemInstruction: buildSystemInstruction(),
+    tools: [{ functionDeclarations: declarations }],
+    maxOutputTokens: 1_200,
+    temperature: 0.7,
+  };
 
   const encoder = new TextEncoder();
 
-  // Plain text stream rather than SSE — the client can read it with a standard
-  // ReadableStream reader and needs no event parsing.
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
+      const send = (text: string) => controller.enqueue(encoder.encode(text));
+
       try {
-        for await (const chunk of stream) {
-          const text = chunk.text;
-          if (text) controller.enqueue(encoder.encode(text));
+        for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+          const stream = await genai().models.generateContentStream({
+            model: MODEL,
+            contents,
+            config,
+          });
+
+          // Accumulate the model's parts so the turn can be replayed as history,
+          // and stream any prose to the client as it arrives.
+          const modelParts: Part[] = [];
+          const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+
+          for await (const chunk of stream) {
+            for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+              modelParts.push(part);
+              if (part.text) send(part.text);
+              if (part.functionCall?.name) {
+                calls.push({
+                  name: part.functionCall.name,
+                  args: (part.functionCall.args ?? {}) as Record<string, unknown>,
+                });
+              }
+            }
+          }
+
+          // No tool calls means this was the answer.
+          if (calls.length === 0) return;
+
+          contents.push({ role: 'model', parts: modelParts });
+
+          // Independent lookups — run them together rather than serially.
+          const responses = await Promise.all(
+            calls.map(async (call) => ({
+              functionResponse: {
+                name: call.name,
+                response: await execute(call.name, call.args),
+              },
+            })),
+          );
+
+          contents.push({ role: 'user', parts: responses as Part[] });
         }
+
+        // Fell out of the loop still wanting tools.
+        send(
+          "\n\nI wasn't able to pull that together — try asking something more specific, " +
+            'or reach Akshat at akshatg9636@gmail.com.',
+        );
       } catch (error) {
-        // The response has already begun, so the status cannot change; surface
-        // the failure in the body instead of truncating silently.
-        console.error('[chat] stream interrupted:', error);
-        controller.enqueue(encoder.encode('\n\n[The response was cut short.]'));
+        console.error('[chat] failed:', error);
+        // Headers are already sent, so the status cannot change; surface the
+        // failure in the body rather than truncating silently.
+        send('\n\n[The assistant hit an error and could not finish this answer.]');
       } finally {
         controller.close();
       }
