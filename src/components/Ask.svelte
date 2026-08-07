@@ -5,6 +5,7 @@
 	import { PUBLIC_API_BASE } from '$env/static/public';
 	import { dockEl, askExpanded, askClosed } from '../lib/ask/store.js';
 	import { loadTurns, persistTurn, clearTurns } from '../lib/ask/db.js';
+	import { renderMarkdown } from '../lib/ask/markdown.js';
 	import { mountOrb } from '../lib/ask/orb.js';
 
 	const API_BASE = (PUBLIC_API_BASE ?? '').trim().replace(/\/$/, '');
@@ -77,11 +78,15 @@
 			? `top: ${dock.top}px; left: ${dock.left}px; width: ${dock.width}px; height: ${dock.height}px; border-radius: 16px; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);`
 			: 'top: 140px; right: 40px; left: auto; width: 420px; height: 520px; border-radius: 16px; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);';
 
+	// The orb is the panel's status light, so it has to stay legible once a
+	// transcript is pushing on it. min-height is what actually defends the size
+	// mid-chat: the box is a flex child, so without it the growing transcript
+	// squeezes the orb down to a speck.
 	$: orbBoxStyle = expanded
-		? 'position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 320px; min-height: 150px; flex: 0 1 320px;'
+		? 'position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 420px; min-height: 240px; flex: 0 1 420px;'
 		: messages.length
-			? 'position: relative; width: 52px; height: 52px; flex: 0 0 auto;'
-			: 'position: relative; width: 158px; height: 158px; flex: 0 1 158px; min-height: 78px;';
+			? 'position: relative; width: 84px; height: 84px; flex: 0 0 auto;'
+			: 'position: relative; width: 196px; height: 196px; flex: 0 1 196px; min-height: 120px;';
 
 	$: orbPaneStyle = expanded
 		? 'width: 360px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; overflow-y: auto; overflow-x: hidden;'
@@ -90,6 +95,21 @@
 			: 'flex: 0 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 10px 0 2px;';
 
 	// ── conversation ────────────────────────────────────────────────────────────
+
+	// The transcript only ever grows — and IndexedDB restores a returning visitor's
+	// whole history on load — while the API caps how much it will accept. Sending
+	// all of it means that once the cap is passed every request 400s: the chat dies
+	// and never recovers. Send the last 10 exchanges instead, starting on a user
+	// turn so the model never opens mid-answer.
+	const HISTORY_TURNS = 10;
+	const HISTORY_LIMIT = HISTORY_TURNS * 2 + 1; // 10 q/a pairs + the new question
+
+	function historyWindow() {
+		const recent = messages.slice(-HISTORY_LIMIT);
+		const firstUser = recent.findIndex((m) => m.role === 'user');
+		const window = firstUser > 0 ? recent.slice(firstUser) : recent;
+		return window.map((m) => ({ role: m.role, content: m.content }));
+	}
 
 	async function ask(text) {
 		const content = (text ?? draft).trim();
@@ -120,10 +140,9 @@
 			const res = await fetch(`${API_BASE}/api/chat`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				// The API is stateless — the whole transcript goes up every time.
-				body: JSON.stringify({
-					messages: messages.map((m) => ({ role: m.role, content: m.content }))
-				})
+				// The API is stateless, so history is replayed — but as a trailing
+				// window, not the whole thing. See historyWindow().
+				body: JSON.stringify({ messages: historyWindow() })
 			});
 
 			if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
@@ -149,7 +168,7 @@
 
 	function beginAssistant(t0) {
 		clearInterval(clockTimer);
-		latency = Math.round(performance.now() - t0);
+		if (t0 !== undefined) latency = Math.round(performance.now() - t0);
 		phase = 'speaking';
 		messages = [...messages, { role: 'assistant', content: '', streaming: true }];
 		scrollToLatest();
@@ -166,8 +185,13 @@
 
 	function finishAssistant(text, t0) {
 		clearInterval(clockTimer);
-		// The no-API path never opened an assistant row; open one now.
-		if (t0 !== undefined) beginAssistant(t0);
+		// This overwrites the last row, so that row must actually be the
+		// assistant's. Two paths reach here without one ever being opened: the
+		// no-API early return, and a fetch that throws before the first chunk.
+		// Overwriting blindly there replaced the *user's* message with this text
+		// — the question vanished and the error appeared in their own bubble.
+		const last = messages[messages.length - 1];
+		if (!last || last.role !== 'assistant') beginAssistant(t0);
 		const next = messages.slice();
 		next[next.length - 1] = { ...next[next.length - 1], content: text, streaming: false };
 		messages = next;
@@ -245,13 +269,37 @@
 			if (turns.length) messages = turns.map((t) => ({ ...t, streaming: false }));
 		});
 
-		if (orbHost) orb = mountOrb(orbHost, () => phase, { density: 3400 });
+		// Density is tied to the rendered size — the same particle count spread
+		// over a larger sphere reads as sparser, so it rises with the box.
+		if (orbHost) orb = mountOrb(orbHost, () => phase, { density: 4200 });
 
-		measure();
+		// A single measure() here is too early: the hero slot has not reached its
+		// final width until the webfont lands and the grid settles, so the panel
+		// would keep a box narrower than the slot for the rest of the session —
+		// and only correct itself after an expand/collapse, which re-measures.
+		// Three cheap things cover the settling window instead.
+		trackDuringTransition(); // 550ms burst, catches the initial reflow
+		document.fonts?.ready.then(measure); // webfont swap changes the hero's width
+
+		// The slot is the source of truth for the docked box, so follow it for the
+		// whole session. Safe against the observer feedback loop that froze this
+		// page before: the panel is position:fixed, so restyling it cannot resize
+		// the slot, and measure() only assigns when the box moved >0.5px.
+		let slotRO;
+		const unsubDock = dockEl.subscribe((el) => {
+			slotRO?.disconnect();
+			if (!el) return;
+			slotRO = new ResizeObserver(measure);
+			slotRO.observe(el);
+			measure();
+		});
+
 		window.addEventListener('scroll', measure, { passive: true });
 		window.addEventListener('resize', measure);
 
 		return () => {
+			unsubDock();
+			slotRO?.disconnect();
 			window.removeEventListener('scroll', measure);
 			window.removeEventListener('resize', measure);
 		};
@@ -390,10 +438,9 @@
 									<div class="avatar" class:bobbing={m.streaming}>
 										<Icon icon="mage:message-dots-round" width="13" style="color: #4ade80;" />
 									</div>
+									<!-- Safe: renderMarkdown escapes before it adds any markup. -->
 									<div class="assistant-text" style="font-size: {expanded ? '15.5px' : '13.5px'};">
-										{#each m.content.split('\n\n').filter(Boolean) as para}
-											<p>{para}</p>
-										{/each}
+										{@html renderMarkdown(m.content)}
 									</div>
 								</div>
 							{/if}
@@ -765,6 +812,71 @@
 		margin: 0 0 0.8em;
 	}
 	.assistant-text p:last-child {
+		margin-bottom: 0;
+	}
+	.assistant-text strong {
+		color: #e7e7e7;
+		font-weight: 600;
+	}
+	.assistant-text em {
+		font-style: italic;
+	}
+	.assistant-text code {
+		font-family: 'JetBrains Mono', ui-monospace, monospace;
+		font-size: 0.88em;
+		padding: 1px 5px;
+		border-radius: 4px;
+		background: rgba(74, 222, 128, 0.09);
+		border: 1px solid rgba(74, 222, 128, 0.16);
+		color: #4ade80;
+		word-break: break-word;
+	}
+	.assistant-text a {
+		color: #4ade80;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	.assistant-text .md-h {
+		color: #e7e7e7;
+		font-weight: 600;
+		margin: 0 0 0.5em;
+	}
+	.assistant-text ul,
+	.assistant-text ol {
+		margin: 0 0 0.8em;
+		padding-left: 1.25em;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+	}
+	.assistant-text ul {
+		list-style: none;
+		padding-left: 0.15em;
+	}
+	.assistant-text ol {
+		list-style: decimal;
+	}
+	.assistant-text li {
+		padding-left: 1em;
+		position: relative;
+	}
+	/* A dot drawn rather than a list marker, so it can take the accent colour. */
+	.assistant-text ul > li::before {
+		content: '';
+		position: absolute;
+		left: 0.1em;
+		top: 0.62em;
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: #4ade80;
+		opacity: 0.65;
+	}
+	.assistant-text ol > li {
+		padding-left: 0.2em;
+	}
+	.assistant-text ul:last-child,
+	.assistant-text ol:last-child {
 		margin-bottom: 0;
 	}
 

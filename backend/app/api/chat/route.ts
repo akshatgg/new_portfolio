@@ -25,8 +25,16 @@ const MAX_TOOL_ROUNDS = 6;
 // Guardrails on what a client may send. The browser holds conversation history
 // in IndexedDB and replays it on every request, so these caps also bound how
 // much a long-running conversation can grow.
-const MAX_MESSAGES = 20;
+// The client replays its last 10 exchanges (20 messages) plus the new question,
+// so this must clear 21 with room to spare — otherwise the cap the client is
+// respecting is still the cap that rejects it.
+const MAX_MESSAGES = 24;
+// What a visitor may type — an abuse guard on the one field they control.
 const MAX_CHARS_PER_MESSAGE = 2_000;
+// Assistant turns are this API's own prior output being replayed, so holding them
+// to the visitor's limit rejects a conversation for the crime of having answered
+// well: one long reply and every following request 400s.
+const MAX_CHARS_PER_REPLY = 12_000;
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -68,8 +76,9 @@ function parseMessages(input: unknown): ChatMessage[] | string {
     if (typeof content !== 'string' || content.trim() === '') {
       return 'Each message needs non-empty string content.';
     }
-    if (content.length > MAX_CHARS_PER_MESSAGE) {
-      return `Messages are limited to ${MAX_CHARS_PER_MESSAGE} characters.`;
+    const limit = role === 'user' ? MAX_CHARS_PER_MESSAGE : MAX_CHARS_PER_REPLY;
+    if (content.length > limit) {
+      return `Messages are limited to ${limit} characters.`;
     }
 
     messages.push({ role, content });
