@@ -186,10 +186,24 @@
 	function expand() {
 		askClosed.set(false);
 		askExpanded.set(true);
+		trackDuringTransition();
 		tick().then(() => inputEl?.focus());
 	}
 	function collapse() {
 		askExpanded.set(false);
+		trackDuringTransition();
+	}
+
+	/** Follow the slot for the length of the expand/collapse transition, then stop. */
+	function trackDuringTransition() {
+		if (!browser) return;
+		cancelAnimationFrame(measureRaf);
+		const until = performance.now() + 550;
+		const step = () => {
+			measure();
+			if (performance.now() < until) measureRaf = requestAnimationFrame(step);
+		};
+		step();
 	}
 	function toggleExpand() {
 		expanded ? collapse() : expand();
@@ -199,12 +213,16 @@
 		askClosed.set(true);
 	}
 
-	function onDraft(e) {
+	// bind:value owns `draft`; this grows the box and reflects typing in the
+	// status light. It checks `phase` directly rather than the derived `busy`,
+	// which would make busy → phase → busy a cyclical reactive dependency.
+	function autosize(e) {
 		const el = e.target;
 		el.style.height = 'auto';
 		el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-		draft = el.value;
-		if (!busy) phase = el.value ? 'listening' : 'idle';
+		if (phase === 'idle' || phase === 'listening') {
+			phase = el.value ? 'listening' : 'idle';
+		}
 	}
 
 	function onKeyDown(e) {
@@ -230,13 +248,18 @@
 
 		if (orbHost) orb = mountOrb(orbHost, () => phase, { density: 3400 });
 
-		const loop = () => {
-			measure();
-			measureRaf = requestAnimationFrame(loop);
-		};
-		loop();
+		measure();
+		window.addEventListener('scroll', measure, { passive: true });
+		window.addEventListener('resize', measure);
+		const ro = window.ResizeObserver ? new ResizeObserver(measure) : null;
+		if ($dockEl) ro?.observe($dockEl);
 
-		return () => window.removeEventListener('resize', onResize);
+		return () => {
+			window.removeEventListener('resize', onResize);
+			window.removeEventListener('scroll', measure);
+			window.removeEventListener('resize', measure);
+			ro?.disconnect();
+		};
 	});
 
 	onDestroy(() => {
@@ -361,7 +384,7 @@
 						</div>
 					{/if}
 
-					{#each messages as m (m)}
+					{#each messages as m, i (i)}
 						<div class="row" style="justify-content: {m.role === 'user' ? 'flex-end' : 'flex-start'};">
 							{#if m.role === 'user'}
 								<div class="bubble" style="font-size: {expanded ? '15px' : '13.5px'};">
@@ -411,8 +434,8 @@
 					<div class="composer" class:focused>
 						<textarea
 							bind:this={inputEl}
-							value={draft}
-							on:input={onDraft}
+							bind:value={draft}
+							on:input={autosize}
 							on:keydown={onKeyDown}
 							on:focus={() => (focused = true)}
 							on:blur={() => (focused = false)}
