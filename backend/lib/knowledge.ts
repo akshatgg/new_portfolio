@@ -11,13 +11,17 @@ import { isConfigured } from '@/lib/confluence';
  * are absent — without it an unconfigured deployment could answer nothing.
  */
 
+// A deployment is immutable, so caching these files is free there. In dev it is
+// the opposite of free: the prompt is the thing you iterate on, and a cache that
+// outlives the edit makes it look like your change had no effect.
 const cache = new Map<string, string>();
+const CACHE_READS = process.env.NODE_ENV === 'production';
 
 function readData(file: string): string {
   const hit = cache.get(file);
   if (hit !== undefined) return hit;
   const text = readFileSync(join(process.cwd(), 'data', file), 'utf8');
-  cache.set(file, text);
+  if (CACHE_READS) cache.set(file, text);
   return text;
 }
 
