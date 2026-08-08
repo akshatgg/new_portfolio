@@ -22,11 +22,11 @@
 			tech: ['FastAPI', 'Python', 'Kotlin', 'React', 'Three.js', 'Blender', 'Hunyuan 3D', 'MindAR', 'WebSocket', 'GCP']
 		},
 		{
-			company: 'VibeMonitor',
+			company: 'Beryl',
 			role: 'Software Engineer · Full Time',
 			period: 'Sep 2025 — Jun 2026',
 			location: 'Remote · India',
-			website: 'https://vibemonitor.ai',
+			website: 'https://beryl.so',
 			logo: 'mdi:radar',
 			highlights: [
 				'Built Beryl, an AI-driven end-to-end test-automation product that crawls a target app from a single URL — including authenticated pages — generates natural-language test cases, converts them into Playwright scripts, and runs them headless to report pass/fail and a site-reliability score.',
@@ -36,7 +36,7 @@
 				'Built an automated Root Cause Analysis engine on LangGraph that traces incidents through repository commit history — cutting incident investigation time by 65%.',
 				'Ran container orchestration on Kubernetes (Amazon EKS) and improved CI/CD with build caching & artifact reuse — cutting build time 20% across 10+ pipelines.'
 			],
-			tech: ['Beryl', 'Playwright', 'ClickHouse', 'FastAPI', 'LangGraph', 'Kubernetes', 'Prometheus', 'Grafana', 'AWS', 'Next.js']
+			tech: ['Playwright', 'ClickHouse', 'FastAPI', 'LangGraph', 'Kubernetes', 'Prometheus', 'Grafana', 'AWS', 'Next.js']
 		},
 		{
 			company: 'iTax Easy',
