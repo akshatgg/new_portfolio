@@ -3,7 +3,6 @@
 	import { browser } from '$app/environment';
 	import Icon from '@iconify/svelte';
 	import { PUBLIC_API_BASE } from '$env/static/public';
-	import { dockEl, askExpanded, askClosed } from '../lib/ask/store.js';
 	import { loadTurns, persistTurn, clearTurns } from '../lib/ask/db.js';
 	import { renderMarkdown } from '../lib/ask/markdown.js';
 	import { mountOrb } from '../lib/ask/orb.js';
@@ -15,9 +14,6 @@
 	let messages = [];
 	let draft = '';
 	let focused = false;
-	$: expanded = $askExpanded;
-	$: closed = $askClosed;
-	let dock = null;
 	let latency = 0;
 	let tokens = 0;
 	let elapsed = 0;
@@ -27,72 +23,38 @@
 	let orbHost;
 	let orb = null;
 	let clockTimer;
-	let measureRaf;
 
 	$: busy = phase === 'thinking' || phase === 'speaking';
 	$: isEmpty = messages.length === 0;
-	$: stateLabel = { idle: 'idle', listening: 'listening', thinking: 'retrieving', speaking: 'answering' }[phase];
-	$: dotColor = phase === 'thinking' ? '#fbbf24' : '#4ade80';
-	$: chromeLabel = expanded ? `ask.akshat — ${stateLabel}` : 'ask.akshat';
-
+	$: stateLabel = {
+		idle: 'idle',
+		listening: 'listening',
+		thinking: 'retrieving',
+		speaking: 'answering'
+	}[phase];
+	// The model replies as Akshat in the first person — backend/data/system-prompt.md
+	// is explicit that it never says "Akshat has…". So the prompts a visitor clicks
+	// are addressed *to* him, not about him.
 	const starters = [
-		{ text: 'What did he build at Mark AI?', icon: 'mdi:billboard' },
-		{ text: 'Explain his ClickHouse work', icon: 'mdi:database-outline' },
-		{ text: 'Is he open to work right now?', icon: 'mdi:briefcase-search-outline' },
-		{ text: "What's he like to work with?", icon: 'mdi:account-heart-outline' }
+		{ text: 'What did you build at Mark AI?', icon: 'mdi:billboard' },
+		{ text: 'Explain your ClickHouse work', icon: 'mdi:database-outline' },
+		{ text: 'Are you open to work right now?', icon: 'mdi:briefcase-search-outline' },
+		{ text: 'What are you like to work with?', icon: 'mdi:account-heart-outline' }
 	];
 
-	const followUps = ['Show me his best project', "What's his tech stack?", 'Walk me through his experience'];
+	const followUps = [
+		'Show me your best project',
+		"What's your tech stack?",
+		'Walk me through your experience'
+	];
 
+	// Deliberately says nothing about which model is behind this.
 	$: telemetry = [
-		{ label: 'model', value: API_BASE ? 'flash-lite' : 'offline' },
 		{ label: 'state', value: stateLabel },
+		{ label: 'turns', value: messages.filter((m) => m.role === 'user').length || '—' },
 		{ label: 'first token', value: latency ? `${latency}ms` : '—' },
 		{ label: 'tokens out', value: tokens ? `~${tokens}` : '—' }
 	];
-
-	// ── the docked/expanded geometry ────────────────────────────────────────────
-	// The panel is fixed so it can animate out to full screen. While docked it
-	// tracks the hero's slot, which moves on scroll, resize and reflow — a rAF
-	// loop is cheaper than fighting three different observers.
-
-	function measure() {
-		const el = $dockEl;
-		if (!el) return;
-		const r = el.getBoundingClientRect();
-		if (!r.width || !r.height) return;
-		if (
-			!dock ||
-			Math.abs(dock.top - r.top) > 0.5 ||
-			Math.abs(dock.left - r.left) > 0.5 ||
-			Math.abs(dock.width - r.width) > 0.5 ||
-			Math.abs(dock.height - r.height) > 0.5
-		) {
-			dock = { top: r.top, left: r.left, width: r.width, height: r.height };
-		}
-	}
-
-	$: surfaceGeometry = expanded
-		? 'top: 4vh; left: 6vw; width: 88vw; height: 92vh; border-radius: 18px; box-shadow: 0 60px 120px -40px rgba(0,0,0,0.9), 0 0 0 1px rgba(74,222,128,0.12);'
-		: dock
-			? `top: ${dock.top}px; left: ${dock.left}px; width: ${dock.width}px; height: ${dock.height}px; border-radius: 16px; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);`
-			: 'top: 140px; right: 40px; left: auto; width: 420px; height: 520px; border-radius: 16px; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);';
-
-	// The orb is the panel's status light, so it has to stay legible once a
-	// transcript is pushing on it. min-height is what actually defends the size
-	// mid-chat: the box is a flex child, so without it the growing transcript
-	// squeezes the orb down to a speck.
-	$: orbBoxStyle = expanded
-		? 'position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 420px; min-height: 240px; flex: 0 1 420px;'
-		: messages.length
-			? 'position: relative; width: 84px; height: 84px; flex: 0 0 auto;'
-			: 'position: relative; width: 196px; height: 196px; flex: 0 1 196px; min-height: 120px;';
-
-	$: orbPaneStyle = expanded
-		? 'width: 360px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; overflow-y: auto; overflow-x: hidden;'
-		: messages.length
-			? 'flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 8px 0 0;'
-			: 'flex: 0 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 10px 0 2px;';
 
 	// ── conversation ────────────────────────────────────────────────────────────
 
@@ -130,7 +92,7 @@
 
 		if (!API_BASE) {
 			finishAssistant(
-				'The assistant is not configured in this build. Akshat can be reached directly at akshatg9636@gmail.com.',
+				"The chat isn't wired up in this build. You can reach me directly at akshatg9636@gmail.com.",
 				t0
 			);
 			return;
@@ -161,7 +123,7 @@
 			finishAssistant(answer);
 		} catch {
 			finishAssistant(
-				'The assistant is unavailable right now. Akshat can be reached directly at akshatg9636@gmail.com.'
+				"I can't get to the chat right now. You can reach me directly at akshatg9636@gmail.com."
 			);
 		}
 	}
@@ -205,38 +167,8 @@
 		messages = [];
 		phase = 'idle';
 		draft = '';
-	}
-
-	// ── panel controls ──────────────────────────────────────────────────────────
-
-	function expand() {
-		askClosed.set(false);
-		askExpanded.set(true);
-		trackDuringTransition();
-		tick().then(() => inputEl?.focus());
-	}
-	function collapse() {
-		askExpanded.set(false);
-		trackDuringTransition();
-	}
-
-	/** Follow the slot for the length of the expand/collapse transition, then stop. */
-	function trackDuringTransition() {
-		if (!browser) return;
-		cancelAnimationFrame(measureRaf);
-		const until = performance.now() + 550;
-		const step = () => {
-			measure();
-			if (performance.now() < until) measureRaf = requestAnimationFrame(step);
-		};
-		step();
-	}
-	function toggleExpand() {
-		expanded ? collapse() : expand();
-	}
-	function close() {
-		askExpanded.set(false);
-		askClosed.set(true);
+		// Otherwise the fade from the cleared thread survives into the empty state.
+		tick().then(measureOverflow);
 	}
 
 	// bind:value owns `draft`; this grows the box and reflects typing in the
@@ -261,162 +193,130 @@
 	// Follow the transcript, but never yank the empty-state greeting out of view.
 	function scrollToLatest() {
 		if (!scrollEl || !messages.length) return;
-		tick().then(() => scrollEl && (scrollEl.scrollTop = scrollEl.scrollHeight));
+		tick().then(() => {
+			if (!scrollEl) return;
+			scrollEl.scrollTop = scrollEl.scrollHeight;
+			measureOverflow();
+		});
 	}
+
+	// ── overflow cue ────────────────────────────────────────────────────────────
+	// Which edges have content past them, so the fade only appears where something
+	// is actually cut off. A permanent fade reads as a design flourish; one that
+	// comes and goes reads as "there is more up there".
+	let cutTop = false;
+	let cutBottom = false;
+
+	function measureOverflow() {
+		if (!scrollEl) return;
+		const slack = scrollEl.scrollHeight - scrollEl.clientHeight;
+		cutTop = scrollEl.scrollTop > 8;
+		cutBottom = slack > 8 && scrollEl.scrollTop < slack - 8;
+	}
+
+	const FADE = '34px';
+	$: maskStops =
+		(cutTop ? `transparent 0, #000 ${FADE}` : '#000 0') +
+		', ' +
+		(cutBottom ? `#000 calc(100% - ${FADE}), transparent 100%` : '#000 100%');
+	$: maskStyle = `-webkit-mask-image: linear-gradient(to bottom, ${maskStops}); mask-image: linear-gradient(to bottom, ${maskStops});`;
 
 	onMount(() => {
 		loadTurns().then((turns) => {
-			if (turns.length) messages = turns.map((t) => ({ ...t, streaming: false }));
+			if (!turns.length) return;
+			messages = turns.map((t) => ({ ...t, streaming: false }));
+			scrollToLatest();
 		});
+
+		// A narrower window rewraps the transcript, which changes whether anything
+		// is actually cut off at the edges.
+		window.addEventListener('resize', measureOverflow);
 
 		// Density is tied to the rendered size — the same particle count spread
-		// over a larger sphere reads as sparser, so it rises with the box.
-		if (orbHost) orb = mountOrb(orbHost, () => phase, { density: 4200 });
+		// over a larger sphere reads as sparser. 3400 is tuned for the ~320px the
+		// rail gives it.
+		if (orbHost) orb = mountOrb(orbHost, () => phase, { density: 3400 });
 
-		// A single measure() here is too early: the hero slot has not reached its
-		// final width until the webfont lands and the grid settles, so the panel
-		// would keep a box narrower than the slot for the rest of the session —
-		// and only correct itself after an expand/collapse, which re-measures.
-		// Three cheap things cover the settling window instead.
-		trackDuringTransition(); // 550ms burst, catches the initial reflow
-		document.fonts?.ready.then(measure); // webfont swap changes the hero's width
-
-		// The slot is the source of truth for the docked box, so follow it for the
-		// whole session. Safe against the observer feedback loop that froze this
-		// page before: the panel is position:fixed, so restyling it cannot resize
-		// the slot, and measure() only assigns when the box moved >0.5px.
-		let slotRO;
-		const unsubDock = dockEl.subscribe((el) => {
-			slotRO?.disconnect();
-			if (!el) return;
-			slotRO = new ResizeObserver(measure);
-			slotRO.observe(el);
-			measure();
-		});
-
-		window.addEventListener('scroll', measure, { passive: true });
-		window.addEventListener('resize', measure);
-
-		return () => {
-			unsubDock();
-			slotRO?.disconnect();
-			window.removeEventListener('scroll', measure);
-			window.removeEventListener('resize', measure);
-		};
+		return () => window.removeEventListener('resize', measureOverflow);
 	});
 
 	onDestroy(() => {
-		// onDestroy also runs during SSR, where the animation-frame API does not
-		// exist and nothing was ever started.
+		// onDestroy also runs during SSR, where none of this was ever started.
 		if (!browser) return;
 		clearInterval(clockTimer);
-		cancelAnimationFrame(measureRaf);
 		orb?.destroy();
 	});
 </script>
 
-<!-- backdrop, only interactive while expanded -->
-<div
-	class="ask-backdrop"
-	class:on={expanded}
-	on:click={collapse}
-	on:keydown={(e) => e.key === 'Escape' && collapse()}
-	role="presentation"
-></div>
+<div class="ask">
+	<div class="ask-body">
+		<!-- orb rail -->
+		<div class="orb-pane">
+			<div class="orb-stack">
+				<div class="orb-box" class:compact={messages.length}>
+					<div bind:this={orbHost} class="orb-host"></div>
+				</div>
 
-<div class="ask-surface" class:expanded class:closed={$askClosed} style={surfaceGeometry}>
-	<!-- chrome -->
-	<div class="ask-chrome">
-		<div class="lights">
-			<button class="light red" on:click={close} aria-label="Close" title="Close"></button>
-			<button class="light amber" on:click={collapse} aria-label="Dock" title="Dock to hero"></button>
-			<button class="light green" on:click={expand} aria-label="Expand" title="Expand"></button>
-		</div>
-
-		<div class="chrome-label">
-			<span class="dot" style="background: {dotColor}; box-shadow: 0 0 8px {dotColor};"></span>
-			<span>{chromeLabel}</span>
-		</div>
-
-		<div class="chrome-actions">
-			{#if messages.length}
-				<button class="ghost-btn" on:click={resetChat} aria-label="New thread" title="New thread">
-					<Icon icon="mdi:broom" width="13" />
-				</button>
-			{/if}
-			<button class="ghost-btn" on:click={toggleExpand} aria-label="Expand">
-				<Icon icon={expanded ? 'mdi:arrow-collapse' : 'mdi:arrow-expand'} width="13" />
-			</button>
-		</div>
-	</div>
-
-	<div class="ask-body" style="flex-direction: {expanded ? 'row' : 'column'};">
-		<!-- orb pane -->
-		<div style={orbPaneStyle}>
-			<div style={orbBoxStyle}>
-				<div bind:this={orbHost} style="position: absolute; inset: 0;"></div>
-			</div>
-
-			{#if expanded}
 				<div class="orb-copy">
 					<div class="ask-wordmark">ASK</div>
-					<p>
-						The index of Akshat's work. It answers from his own résumé, repos and shipped
-						systems — nothing else.
-					</p>
+					<p>An AI answering as me, from my own résumé, repos and shipped systems — nothing else.</p>
 				</div>
+			</div>
 
-				<div class="telemetry">
-					<div class="rubric">// telemetry</div>
-					<div class="telemetry-grid">
-						{#each telemetry as t}
-							<div class="tile">
-								<div class="tile-label">{t.label}</div>
-								<div class="tile-value">{t.value}</div>
-							</div>
-						{/each}
-					</div>
-					<div class="privacy">
-						<Icon icon="mdi:shield-lock-outline" width="13" />
-						Stateless API · history stays in your browser
-					</div>
+			<div class="telemetry">
+				<div class="rubric">// telemetry</div>
+				<div class="telemetry-grid">
+					{#each telemetry as t}
+						<div class="tile">
+							<div class="tile-label">{t.label}</div>
+							<div class="tile-value">{t.value}</div>
+						</div>
+					{/each}
 				</div>
-			{/if}
+				<div class="privacy">
+					<Icon icon="mdi:shield-lock-outline" width="13" />
+					Stateless API · history stays in your browser
+				</div>
+			</div>
 		</div>
 
 		<!-- transcript + composer -->
 		<div class="convo">
+			<!-- Reserved whether or not the button is in it, so starting a thread does
+			     not shove the transcript down a row. -->
+			<div class="convo-meta">
+				<div class="meta-inner">
+					{#if messages.length}
+						<button class="reset-btn" on:click={resetChat} title="Clear this conversation">
+							<Icon icon="mdi:broom" width="14" />
+							New thread
+						</button>
+					{/if}
+				</div>
+			</div>
+
 			<div
 				bind:this={scrollEl}
 				class="scroll-area"
-				style="padding: {expanded ? '32px 0 20px' : '4px 0 14px'};"
+				class:centered={isEmpty}
+				style={maskStyle}
+				on:scroll={measureOverflow}
 			>
-				<div
-					class="convo-inner"
-					style="gap: {expanded ? '26px' : '18px'}; {expanded
-						? 'max-width: 760px; margin: 0 auto; padding: 0 40px;'
-						: 'padding: 0 20px;'}"
-				>
+				<div class="convo-inner">
 					{#if isEmpty}
 						<div class="empty">
 							<div class="empty-head">
-								<span class="rubric">// ask the index</span>
-								<h2 style="font-size: {expanded ? '42px' : '24px'};">
-									Skip the résumé.<br /><span class="accent">Interrogate it.</span>
+								<span class="rubric">// ask away</span>
+								<h2 class="greeting">
+									Hi, I'm Akshat.<br /><span class="accent">Ask me anything.</span>
 								</h2>
-								{#if expanded}
-									<p class="empty-blurb">
-										Everything Akshat has built — ClickHouse ingestion pipelines, an AI booking
-										agent, a Kotlin signage player, seven roles' worth of receipts — is loaded in.
-										Ask in plain language and it answers with the actual numbers.
-									</p>
-								{/if}
+								<p class="empty-blurb">
+									Everything I've built is loaded in — ask in plain language and you'll get the
+									actual numbers.
+								</p>
 							</div>
 
-							<div
-								class="starters"
-								style="grid-template-columns: {expanded ? '1fr 1fr' : '1fr'};"
-							>
+							<div class="starters">
 								{#each starters as s}
 									<button class="starter" on:click={() => ask(s.text)}>
 										<Icon icon={s.icon} width="15" style="color: #4ade80; flex-shrink: 0;" />
@@ -428,19 +328,30 @@
 					{/if}
 
 					{#each messages as m, i (i)}
-						<div class="row" style="justify-content: {m.role === 'user' ? 'flex-end' : 'flex-start'};">
+						<div class="row" class:mine={m.role === 'user'}>
 							{#if m.role === 'user'}
-								<div class="bubble" style="font-size: {expanded ? '15px' : '13.5px'};">
-									{m.content}
-								</div>
+								<div class="bubble">{m.content}</div>
 							{:else}
 								<div class="assistant">
 									<div class="avatar" class:bobbing={m.streaming}>
-										<Icon icon="mage:message-dots-round" width="13" style="color: #4ade80;" />
+										<span class="avatar-dot"></span>
 									</div>
-									<!-- Safe: renderMarkdown escapes before it adds any markup. -->
-									<div class="assistant-text" style="font-size: {expanded ? '15.5px' : '13.5px'};">
-										{@html renderMarkdown(m.content)}
+									<div class="assistant-col">
+										<div class="assistant-head">
+											<span class="assistant-tag">ASK</span>
+											<span class="assistant-rule"></span>
+										</div>
+										<!-- Safe: renderMarkdown escapes before it adds any markup. -->
+										<div class="assistant-text">{@html renderMarkdown(m.content)}</div>
+										{#if m.streaming}
+											<div class="streaming">
+												<span class="streaming-dot">
+													<span class="streaming-ping"></span>
+													<span class="streaming-core"></span>
+												</span>
+												streaming
+											</div>
+										{/if}
 									</div>
 								</div>
 							{/if}
@@ -449,30 +360,28 @@
 
 					{#if phase === 'thinking'}
 						<div class="row thinking">
-							<div class="avatar bobbing">
-								<Icon icon="mage:message-dots-round" width="13" style="color: #4ade80;" />
-							</div>
+							<div class="avatar bobbing"><span class="avatar-dot"></span></div>
 							<div class="sweeps">
-								<span class="sweep-track"><span class="sweep"></span></span>
-								<span class="sweep-track"><span class="sweep delayed"></span></span>
+								<span class="sweep-track wide"><span class="sweep"></span></span>
+								<span class="sweep-track narrow"><span class="sweep delayed"></span></span>
 								<span class="thinking-label">searching the knowledge base · {elapsed}ms</span>
 							</div>
-						</div>
-					{/if}
-
-					{#if expanded && messages.length && !busy}
-						<div class="followups">
-							{#each followUps as f}
-								<button class="followup" on:click={() => ask(f)}>{f}</button>
-							{/each}
 						</div>
 					{/if}
 				</div>
 			</div>
 
 			<!-- composer -->
-			<div class="composer-wrap" style="padding: {expanded ? '4px 40px 24px' : '4px 20px 16px'};">
-				<div style="position: relative; width: 100%; margin: 0 auto; {expanded ? 'max-width: 760px;' : ''}">
+			<div class="composer-wrap">
+				<div class="composer-inner">
+					{#if messages.length && !busy}
+						<div class="followups">
+							{#each followUps as f}
+								<button class="followup" on:click={() => ask(f)}>{f}</button>
+							{/each}
+						</div>
+					{/if}
+
 					<div class="composer" class:focused>
 						<textarea
 							bind:this={inputEl}
@@ -482,7 +391,7 @@
 							on:focus={() => (focused = true)}
 							on:blur={() => (focused = false)}
 							rows="1"
-							placeholder="Ask anything about Akshat…"
+							placeholder="Ask me anything…"
 						></textarea>
 						<button
 							class="send"
@@ -491,12 +400,11 @@
 							aria-label="Send"
 							disabled={!draft.trim() || busy}
 						>
-							<Icon icon="mdi:send" width="16" />
+							<Icon icon="mdi:arrow-up" width="17" />
 						</button>
 					</div>
 					<div class="composer-hint">
-						<span>{expanded ? 'Enter to send · Shift+Enter for a new line' : 'Enter to send'}</span>
-						<span>{API_BASE ? 'gemini-3.5-flash-lite' : 'offline'}</span>
+						<span>Enter to send · Shift+Enter for a new line</span>
 					</div>
 				</div>
 			</div>
@@ -505,145 +413,98 @@
 </div>
 
 <style>
-	.ask-surface.expanded {
-		z-index: 100;
-	}
-
-	.ask-backdrop {
-		position: fixed;
-		inset: 0;
-		z-index: 90;
-		background: rgba(2, 2, 2, 0.82);
-		backdrop-filter: blur(6px);
-		transition: opacity 0.35s ease;
-		opacity: 0;
-		pointer-events: none;
-	}
-	.ask-backdrop.on {
-		opacity: 1;
-		pointer-events: auto;
-	}
-
-	.ask-surface {
-		position: fixed;
-		/* Docked, this is a hero element, so the header and any menu it drops must
-		   sit above it — at 100 the panel swallowed the Resume/CV dropdown.
-		   Expanded it becomes a full-screen overlay and has to cover the header
-		   instead, which is why the two states can't share one z-index.
-		   The header wrapper is a flex item at z-50, so 40 and 100 straddle it. */
-		z-index: 40;
+	/* The hero itself, not a panel in it: no frame, no surface, no shadow. The
+	   page background (and the particle field on it) reads straight through.
+	   Everything that used to switch on a `docked` / `expanded` flag is now a
+	   plain media query at 1024px. */
+	.ask {
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
-		background: rgba(8, 8, 8, 0.94);
-		backdrop-filter: blur(18px);
-		-webkit-backdrop-filter: blur(18px);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		width: 100%;
+		height: 100%;
+		min-height: 0;
 		letter-spacing: 0.02em;
-		opacity: 1;
-		transform: scale(1);
-		transition:
-			top 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-			left 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-			width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-			height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-			border-radius 0.45s,
-			box-shadow 0.45s,
-			opacity 0.3s ease,
-			transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	}
-	.ask-surface.closed {
-		opacity: 0;
-		transform: scale(0.94);
-		pointer-events: none;
 	}
 
-	.ask-chrome {
+	.convo-meta {
 		flex-shrink: 0;
-		height: 42px;
+		padding: 0 20px 10px;
+	}
+	.meta-inner {
+		width: 100%;
+		margin: 0 auto;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		padding: 0 14px;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		justify-content: flex-end;
+		gap: 12px;
+		min-height: 30px;
 	}
-	.lights {
-		display: flex;
-		gap: 8px;
+	/* Was a bare 13px glyph on an 8%-white border, which read as a smudge. It is the
+	   only control in the conversation column, so it gets a label and enough
+	   contrast to be found without hunting. */
+	.reset-btn {
+		display: inline-flex;
 		align-items: center;
-	}
-	.light {
-		width: 12px;
-		height: 12px;
-		padding: 0;
+		gap: 7px;
+		padding: 6px 13px;
 		border-radius: 9999px;
-		border: none;
-		cursor: pointer;
-		transition: filter 0.2s;
-	}
-	.light:hover {
-		filter: brightness(1.25);
-	}
-	.red {
-		background: #ff5f57;
-	}
-	.amber {
-		background: #febc2e;
-	}
-	.green {
-		background: #28c840;
-	}
-
-	.chrome-label {
-		display: flex;
-		align-items: center;
-		gap: 9px;
+		background: rgba(74, 222, 128, 0.08);
+		border: 1px solid rgba(74, 222, 128, 0.3);
+		color: rgba(231, 231, 231, 0.82);
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
 		font-size: 11px;
-		color: rgba(231, 231, 231, 0.55);
-	}
-	.dot {
-		width: 7px;
-		height: 7px;
-		border-radius: 9999px;
-		display: block;
-		transition: background 0.3s;
-	}
-
-	.chrome-actions {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-	.ghost-btn {
-		width: 25px;
-		height: 25px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 6px;
-		background: transparent;
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		color: rgba(231, 231, 231, 0.55);
+		letter-spacing: 0.01em;
+		white-space: nowrap;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
-	.ghost-btn:hover {
-		color: #4ade80;
-		border-color: rgba(74, 222, 128, 0.4);
+	.reset-btn:hover {
+		background: rgba(74, 222, 128, 0.18);
+		border-color: rgba(74, 222, 128, 0.6);
+		color: #86efac;
 	}
 
 	.ask-body {
 		flex: 1 1 0%;
 		min-height: 0;
 		display: flex;
+		flex-direction: column;
 	}
 
-	.orb-copy {
+	/* ── orb rail ── */
+	.orb-pane {
+		flex: 0 0 auto;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		gap: 10px;
+		justify-content: center;
+		padding: 6px 0 10px;
+	}
+	.orb-stack {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.orb-box {
+		position: relative;
+		width: 158px;
+		height: 158px;
+		flex: 0 0 auto;
+	}
+	/* Once a transcript exists the orb steps back to a status light so the answers
+	   get the room. */
+	.orb-box.compact {
+		width: 52px;
+		height: 52px;
+	}
+	.orb-host {
+		position: absolute;
+		inset: 0;
+	}
+	/* Wordmark, blurb and telemetry are the wide layout's furniture — below 1024
+	   the pane collapses to the orb alone. */
+	.orb-copy,
+	.telemetry {
+		display: none;
 	}
 	.ask-wordmark {
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -660,14 +521,6 @@
 		line-height: 1.6;
 		max-width: 260px;
 		text-wrap: pretty;
-	}
-
-	.telemetry {
-		margin-top: auto;
-		padding-top: 22px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
 	}
 	.rubric {
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -710,6 +563,7 @@
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
 	}
 
+	/* ── transcript ── */
 	.convo {
 		display: flex;
 		flex-direction: column;
@@ -718,13 +572,53 @@
 	}
 	.scroll-area {
 		flex: 1 1 0%;
+		min-height: 0;
 		overflow-y: auto;
+		padding: 4px 0 14px;
+		display: flex;
+		flex-direction: column;
+	}
+	/* Overrides app.css's 8px page scrollbar for these two panes only — inside the
+	   conversation it sat too close in weight to the message rules themselves. */
+	.scroll-area,
+	.orb-pane {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(74, 222, 128, 0.28) transparent;
+	}
+	.scroll-area::-webkit-scrollbar,
+	.orb-pane::-webkit-scrollbar {
+		width: 4px;
+	}
+	.scroll-area::-webkit-scrollbar-track,
+	.orb-pane::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.scroll-area::-webkit-scrollbar-thumb,
+	.orb-pane::-webkit-scrollbar-thumb {
+		background: rgba(74, 222, 128, 0.28);
+		border-radius: 9999px;
+	}
+	.scroll-area::-webkit-scrollbar-thumb:hover,
+	.orb-pane::-webkit-scrollbar-thumb:hover {
+		background: rgba(74, 222, 128, 0.5);
 	}
 	.convo-inner {
 		width: 100%;
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
+		gap: 18px;
+		padding: 0 20px;
+		/* A thread reads top-down: the first question stays put at the top and the
+		   answers grow downward under it. */
+		margin-left: auto;
+		margin-right: auto;
+	}
+	/* Nothing asked yet: the greeting is the only content, so centre it instead of
+	   stranding it against the top edge. */
+	.scroll-area.centered .convo-inner {
+		margin-top: auto;
+		margin-bottom: auto;
 	}
 
 	.empty {
@@ -737,7 +631,8 @@
 		flex-direction: column;
 		gap: 10px;
 	}
-	.empty-head h2 {
+	.greeting {
+		font-size: clamp(28px, 4.2vw, 42px);
 		font-weight: 700;
 		color: #f5f5f5;
 		letter-spacing: -0.02em;
@@ -748,6 +643,7 @@
 		color: #4ade80;
 	}
 	.empty-blurb {
+		display: none;
 		font-size: 16px;
 		color: rgba(231, 231, 231, 0.78);
 		line-height: 1.65;
@@ -757,22 +653,30 @@
 
 	.starters {
 		display: grid;
+		grid-template-columns: 1fr;
 		gap: 9px;
 	}
 	.starter {
 		display: flex;
 		align-items: flex-start;
-		gap: 9px;
+		gap: 10px;
 		text-align: left;
-		padding: 11px 13px;
+		padding: 12px 14px;
 		border-radius: 10px;
 		background: rgba(10, 10, 10, 0.6);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
 		border: 1px solid rgba(255, 255, 255, 0.06);
 		color: rgba(231, 231, 231, 0.78);
 		font-size: 13px;
+		line-height: 1.45;
+		letter-spacing: 0.01em;
 		font-family: inherit;
 		cursor: pointer;
-		transition: all 0.2s;
+		transition:
+			border-color 0.25s ease,
+			background-color 0.25s ease,
+			transform 0.25s ease;
 	}
 	.starter:hover {
 		border-color: rgba(34, 197, 94, 0.35);
@@ -784,12 +688,16 @@
 		display: flex;
 		animation: ask-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
+	.row.mine {
+		justify-content: flex-end;
+	}
 	.bubble {
 		max-width: 82%;
 		background: rgba(74, 222, 128, 0.1);
 		border: 1px solid rgba(74, 222, 128, 0.22);
 		border-radius: 14px 14px 4px 14px;
 		padding: 11px 15px;
+		font-size: 13.5px;
 		line-height: 1.55;
 		color: #f0fdf4;
 		text-wrap: pretty;
@@ -797,6 +705,7 @@
 	.assistant {
 		display: flex;
 		gap: 12px;
+		width: 100%;
 	}
 	.avatar {
 		width: 26px;
@@ -812,7 +721,38 @@
 	.avatar.bobbing {
 		animation: ask-bob 2s ease-in-out infinite;
 	}
+	.avatar-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 9999px;
+		background: #4ade80;
+		display: block;
+	}
+	.assistant-col {
+		flex: 1 1 0%;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.assistant-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	.assistant-tag {
+		font-family: 'JetBrains Mono', ui-monospace, monospace;
+		font-size: 10px;
+		letter-spacing: 0.22em;
+		color: rgba(231, 231, 231, 0.55);
+	}
+	.assistant-rule {
+		height: 1px;
+		flex: 1 1 0%;
+		background: linear-gradient(to right, rgba(74, 222, 128, 0.25), transparent);
+	}
 	.assistant-text {
+		font-size: 13.5px;
 		line-height: 1.7;
 		color: rgba(231, 231, 231, 0.86);
 		text-wrap: pretty;
@@ -894,25 +834,60 @@
 		margin-bottom: 0;
 	}
 
+	.streaming {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		font-family: 'JetBrains Mono', ui-monospace, monospace;
+		font-size: 10px;
+		color: rgba(231, 231, 231, 0.38);
+	}
+	.streaming-dot {
+		position: relative;
+		display: block;
+		width: 6px;
+		height: 6px;
+	}
+	.streaming-ping {
+		position: absolute;
+		inset: 0;
+		border-radius: 9999px;
+		background: #4ade80;
+		opacity: 0.6;
+		animation: ask-ping 1.1s cubic-bezier(0, 0, 0.2, 1) infinite;
+	}
+	.streaming-core {
+		position: relative;
+		display: block;
+		width: 6px;
+		height: 6px;
+		border-radius: 9999px;
+		background: #4ade80;
+	}
+
 	.thinking {
 		gap: 12px;
 	}
 	.sweeps {
 		display: flex;
 		flex-direction: column;
-		gap: 7px;
+		gap: 9px;
 		flex: 1;
-		padding-top: 5px;
+		padding-top: 3px;
 	}
 	.sweep-track {
 		position: relative;
 		display: block;
-		height: 7px;
-		width: 100%;
-		max-width: 320px;
+		height: 8px;
 		overflow: hidden;
 		border-radius: 4px;
-		background: rgba(255, 255, 255, 0.03);
+		background: rgba(255, 255, 255, 0.05);
+	}
+	.sweep-track.wide {
+		width: 70%;
+	}
+	.sweep-track.narrow {
+		width: 45%;
 	}
 	.sweep {
 		position: absolute;
@@ -927,42 +902,52 @@
 	}
 	.thinking-label {
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
-		font-size: 10.5px;
+		font-size: 10px;
 		color: rgba(231, 231, 231, 0.38);
 	}
 
+	/* ── composer ── */
+	.composer-wrap {
+		flex-shrink: 0;
+		position: relative;
+		padding: 4px 20px 0;
+	}
+	.composer-inner {
+		position: relative;
+		width: 100%;
+		margin: 0 auto;
+	}
 	.followups {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 7px;
+		padding-bottom: 10px;
 	}
 	.followup {
-		padding: 7px 12px;
+		padding: 6px 12px;
 		border-radius: 9999px;
-		background: rgba(10, 10, 10, 0.6);
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		color: rgba(231, 231, 231, 0.65);
-		font-size: 12px;
-		font-family: inherit;
+		background: rgba(74, 222, 128, 0.05);
+		border: 1px solid rgba(74, 222, 128, 0.18);
+		color: rgba(231, 231, 231, 0.7);
+		font-family: 'JetBrains Mono', ui-monospace, monospace;
+		font-size: 11px;
+		letter-spacing: 0.01em;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
 	.followup:hover {
-		border-color: rgba(74, 222, 128, 0.4);
+		background: rgba(74, 222, 128, 0.14);
+		border-color: rgba(74, 222, 128, 0.5);
 		color: #86efac;
 	}
-
-	.composer-wrap {
-		flex-shrink: 0;
-		position: relative;
-		background: rgba(8, 8, 8, 0.98);
-	}
+	/* Pill at rest — 27px is half the single-line height. It stays generously
+	   rounded rather than going square once the textarea grows. */
 	.composer {
 		display: flex;
 		align-items: flex-end;
 		gap: 10px;
-		padding: 10px 10px 10px 16px;
-		border-radius: 14px;
+		padding: 10px 10px 10px 20px;
+		border-radius: 27px;
 		background: rgba(14, 14, 14, 0.9);
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		transition:
@@ -990,7 +975,7 @@
 		flex-shrink: 0;
 		width: 34px;
 		height: 34px;
-		border-radius: 9px;
+		border-radius: 9999px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1013,6 +998,96 @@
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
 		font-size: 10px;
 		color: rgba(231, 231, 231, 0.3);
+	}
+
+	/* ── wide layout: orb rail beside the conversation ── */
+	@media (min-width: 1024px) {
+		.ask-body {
+			flex-direction: row;
+			gap: 44px;
+		}
+		/* A hairline column rule, not a frame — it separates the two halves without
+		   boxing either of them in. */
+		.orb-pane {
+			width: 412px;
+			flex: 0 0 auto;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			justify-content: flex-start;
+			border-right: 1px solid rgba(255, 255, 255, 0.06);
+			/* Inset from the page gutter rather than flush to it. Aligning the orb's
+			   bounding box with the header's text gutter reads as too far left,
+			   because the sphere's lit mass sits well inside its own box. */
+			padding: 0 44px 0 52px;
+			box-sizing: border-box;
+			overflow-y: auto;
+			overflow-x: hidden;
+		}
+		/* The orb and its copy float as one group in the space the telemetry leaves. */
+		.orb-stack {
+			flex: 1 1 auto;
+			min-height: 0;
+			flex-direction: column;
+			gap: 20px;
+		}
+		/* The rail keeps the full orb whether or not a transcript exists — only the
+		   stacked layout has to trade it away for room. */
+		.orb-box,
+		.orb-box.compact {
+			width: 100%;
+			height: auto;
+			aspect-ratio: 1 / 1;
+			max-height: 300px;
+			min-height: 140px;
+			flex: 0 1 300px;
+		}
+		.orb-copy {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 10px;
+		}
+		.telemetry {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			flex: 0 0 auto;
+			padding-top: 28px;
+		}
+		.convo-meta {
+			padding: 0 0 14px;
+		}
+		.meta-inner,
+		.convo-inner,
+		.composer-inner {
+			max-width: 760px;
+		}
+		.scroll-area {
+			padding: 0 0 20px;
+		}
+		.convo-inner {
+			padding: 0;
+			gap: 26px;
+		}
+		.empty-blurb {
+			display: block;
+		}
+		.starters {
+			grid-template-columns: 1fr 1fr;
+		}
+		.starter {
+			font-size: 14px;
+		}
+		.bubble {
+			font-size: 15px;
+		}
+		.assistant-text {
+			font-size: 15.5px;
+		}
+		.composer-wrap {
+			padding: 4px 0 0;
+		}
 	}
 
 	@keyframes ask-rise {
@@ -1040,6 +1115,13 @@
 		}
 		100% {
 			transform: translateX(300%);
+		}
+	}
+	@keyframes ask-ping {
+		75%,
+		100% {
+			transform: scale(2);
+			opacity: 0;
 		}
 	}
 </style>

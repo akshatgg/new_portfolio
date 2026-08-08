@@ -5,12 +5,12 @@
 
 	let projects = [
 		{
-			name: 'VibeMonitor',
-			image: '/assests/upinthesky.png',
+			name: 'Beryl',
+			image: '/assests/beryl.png',
 			about:
-				'Production observability platform — high-throughput log ingestion into ClickHouse with custom Java/Python/JS SDKs, columnar schema tuning, and unified monitoring across 15+ microservices.',
-			tech: ['ClickHouse', 'FastAPI', 'Python', 'Prometheus', 'Grafana'],
-			link: 'https://vibemonitor.ai',
+				'AI-driven web test automation — crawls an app from a single URL, including authenticated pages, and turns it into self-healing Playwright tests that run locally, on a schedule or in CI.',
+			tech: ['Playwright', 'Next.js', 'FastAPI', 'Python'],
+			link: 'https://beryl.so',
 			github: 'https://github.com/akshatgg',
 			isPrivate: true,
 			featured: true,

@@ -7,7 +7,6 @@
 	import { loadSlim } from '@tsparticles/slim';
 	import Main from '../components/Main.svelte';
 	import Icon from '@iconify/svelte';
-	import Ask from '../components/Ask.svelte';
 
 	let sections = [
 		{ name: 'Home', id: 'home' },
@@ -57,7 +56,6 @@
 	});
 
 	let y = 0;
-	let innerHeight = 0;
 
 	$: showBackToTop = y > 600;
 
@@ -70,20 +68,14 @@
 
 <div class="w-full flex flex-col bg-primary">
 	<div class="z-50">
-		<Header {y} {sections} bind:activeSection={activeSectionId} />
+		<Header {y} {sections} {activeSectionId} />
 	</div>
 	<div class="h-full z-20">
 		<slot />
-		<Main {y} {sections} {activeSectionId} />
+		<Main {sections} bind:activeSection={activeSectionId} />
 	</div>
 	<Footer />
 </div>
-
-<!-- The ASK panel must live at the layout root. The content wrapper above is a
-     flex item with `z-20`, which creates a stacking context — anything nested
-     inside it is capped at that level and would render *under* the z-50 header
-     when expanded, however high its own z-index. -->
-<Ask />
 
 <!-- back to top -->
 <button
@@ -95,4 +87,4 @@
 	<Icon icon="mdi:arrow-up" class="text-xl" />
 </button>
 
-<svelte:window bind:scrollY={y} bind:innerHeight />
+<svelte:window bind:scrollY={y} />

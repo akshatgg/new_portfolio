@@ -65,6 +65,7 @@
 		{ label: 'Email', value: 'akshatg9636@gmail.com', icon: 'mdi:email-outline', href: 'mailto:akshatg9636@gmail.com' },
 		{ label: 'LinkedIn', value: '/in/akshatgg', icon: 'mdi:linkedin', href: 'https://www.linkedin.com/in/akshatgg/' },
 		{ label: 'GitHub', value: '@akshatgg', icon: 'mdi:github', href: 'https://github.com/akshatgg' },
+		{ label: 'Medium', value: '@akshatg9636', icon: 'mdi:medium', href: 'https://medium.com/@akshatg9636' },
 		{ label: 'Phone', value: '+91 96362 86581', icon: 'mdi:phone-outline', href: 'tel:+919636286581' }
 	];
 </script>

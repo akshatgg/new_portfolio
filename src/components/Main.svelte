@@ -1,5 +1,4 @@
 <script>
-	import { onMount } from 'svelte';
 	import Projects from './Projects.svelte';
 	import Skills from './Skills.svelte';
 	import { inview } from 'svelte-inview';
@@ -11,37 +10,27 @@
 	export let sections = [];
 	export let activeSection;
 
+	// A section counts as current only once it reaches the middle 10% band of the
+	// viewport. Without the margin every section that so much as touched the edge
+	// claimed the nav underline, and it flickered between two on every scroll.
+	const viewport = { rootMargin: '-45% 0px -45% 0px' };
+
 	const handleEnter = (id) => {
 		activeSection = id;
 	};
-
-	let type = 'Frontend';
-
-	let typedChar = '';
-	let index = 0;
-	let typewriter;
-
-	const typeChar = () => {
-		if (index < type.length) {
-			typedChar = typedChar + type[index];
-			index++;
-		} else {
-			clearInterval(typewriter);
-		}
-	};
-
-	const typing = () => {
-		typewriter = setInterval(typeChar, 40);
-	};
-
-	onMount(() => {
-		typing();
-	});
 </script>
 
 <main class="flex flex-1 flex-col justify-center items-center tracking-wider w-full">
 	{#each sections as { id }}
-		<section {id} use:inview on:enter={() => handleEnter(id)}>
+		<!-- `main` centres its children at their content width, which is what keeps the
+	     narrower sections centred. The hero has to span the full viewport instead,
+	     so it — and only it — opts out. -->
+	<section
+		{id}
+		class={id === 'home' ? 'w-full' : ''}
+		use:inview={viewport}
+		on:inview_enter={() => handleEnter(id)}
+	>
 			{#if id == 'home'}
 				<Intro />
 			{/if}

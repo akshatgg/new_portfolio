@@ -5,6 +5,7 @@
 	const links = [
 		{ icon: 'mdi:linkedin', href: 'https://www.linkedin.com/in/akshatgg/', label: 'LinkedIn' },
 		{ icon: 'mdi:github', href: 'https://github.com/akshatgg', label: 'GitHub' },
+		{ icon: 'mdi:medium', href: 'https://medium.com/@akshatg9636', label: 'Medium' },
 		{ icon: 'mdi:twitter', href: 'https://x.com/akshat___30', label: 'Twitter' },
 		{ icon: 'mdi:email-outline', href: 'mailto:akshatg9636@gmail.com', label: 'Email' }
 	];
