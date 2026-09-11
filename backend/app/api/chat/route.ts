@@ -143,7 +143,13 @@ export async function POST(request: Request) {
 
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (text: string) => controller.enqueue(encoder.encode(text));
+      // Every byte the client gets goes through here, which makes this the one
+      // place that can tell whether it got anything at all.
+      let sent = 0;
+      const send = (text: string) => {
+        sent += text.length;
+        controller.enqueue(encoder.encode(text));
+      };
 
       try {
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -216,6 +222,18 @@ export async function POST(request: Request) {
         // failure in the body rather than truncating silently.
         send('\n\n[The assistant hit an error and could not finish this answer.]');
       } finally {
+        // Nothing streamed and nothing thrown. The forced pass answers with a
+        // tool call it was no longer offered often enough to matter, and a round
+        // can return neither prose nor a call; both land here having sent zero
+        // bytes. An empty 200 renders as a silent, broken chat, so say something
+        // rather than nothing.
+        if (sent === 0) {
+          console.error('[chat] produced no output');
+          send(
+            "Sorry — I went looking for that and couldn't pull it together. Ask me " +
+              'again, or narrow it down a little and I will answer straight.',
+          );
+        }
         controller.close();
       }
     },
