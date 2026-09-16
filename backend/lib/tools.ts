@@ -1,5 +1,6 @@
 import { Type, type FunctionDeclaration } from '@google/genai';
 import * as confluence from '@/lib/confluence';
+import * as github from '@/lib/github';
 import { DOC_NAMES, describeDocs, isDocName, readDoc } from '@/lib/resume';
 
 /**
@@ -61,6 +62,61 @@ export const declarations: FunctionDeclaration[] = [
       required: ['document'],
     },
   },
+  {
+    name: 'list_github_repos',
+    description: `List Akshat's GitHub repositories (github.com/${github.owner()}): name, description, language, topics, stars, whether it's a fork, and last push date, most recent first. Call this to find which repo a project lives in, to answer "what have you built / worked on lately", or before reading a repo whose exact name you don't know.`,
+    parameters: { type: Type.OBJECT, properties: {} },
+  },
+  {
+    name: 'read_github_repo',
+    description:
+      "Overview of one GitHub repo: description, language breakdown, README, top-level files and folders, and the last 10 commit messages. Use it when asked about a specific project's purpose, stack, structure or recent work — it is the fastest way to get grounded in a codebase.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        repo: {
+          type: Type.STRING,
+          description: 'Repository name exactly as list_github_repos returns it, e.g. "DOOH_Backend".',
+        },
+      },
+      required: ['repo'],
+    },
+  },
+  {
+    name: 'read_github_path',
+    description:
+      'Read a folder listing or a file from a GitHub repo. Pass a folder path (or "" for the root) to see what is inside; pass a file path to read its source. Use this to back a claim about how something was implemented with the actual code.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        repo: { type: Type.STRING, description: 'Repository name.' },
+        path: {
+          type: Type.STRING,
+          description: 'Path inside the repo, e.g. "app/services/booking.py" or "src". Empty string for the root.',
+        },
+      },
+      required: ['repo', 'path'],
+    },
+  },
+  {
+    name: 'search_github_code',
+    description:
+      "Search the code across all of Akshat's repos, or inside one. Use it to find where something is implemented (a library, a function, an integration) when you don't know the repo or file. Returns file paths with matching snippets — follow up with read_github_path.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        query: {
+          type: Type.STRING,
+          description: 'Code or keywords, e.g. "haversine" or "langgraph StateGraph".',
+        },
+        repo: {
+          type: Type.STRING,
+          description: 'Optional repository name to search inside.',
+        },
+      },
+      required: ['query'],
+    },
+  },
 ];
 
 /** Cap on characters returned to the model from any single tool call. */
@@ -116,10 +172,44 @@ export async function execute(
         return { document: doc, content: truncate(await readDoc(doc)) };
       }
 
+      case 'list_github_repos': {
+        const repos = await github.listRepos();
+        return { owner: github.owner(), count: repos.length, repos };
+      }
+
+      case 'read_github_repo': {
+        const repo = String(args.repo ?? '').trim();
+        if (!repo) return { error: 'repo is required' };
+        const overview = await github.repoOverview(repo);
+        return { ...overview, readme: overview.readme && truncate(overview.readme) };
+      }
+
+      case 'read_github_path': {
+        const repo = String(args.repo ?? '').trim();
+        if (!repo) return { error: 'repo is required' };
+        const result = await github.readPath(repo, String(args.path ?? ''));
+        return 'content' in result && typeof result.content === 'string'
+          ? { ...result, content: truncate(result.content) }
+          : result;
+      }
+
+      case 'search_github_code': {
+        const query = String(args.query ?? '').trim();
+        if (!query) return { error: 'query is required' };
+        const repo = String(args.repo ?? '').trim() || undefined;
+        const hits = await github.searchCode(query, repo);
+        return hits.length
+          ? { results: hits }
+          : { results: [], note: 'No code matched. Try other keywords, or browse with read_github_repo.' };
+      }
+
       default:
         return { error: `Unknown tool: ${name}` };
     }
   } catch (error) {
+    if (github.isNotFound(error)) {
+      return { error: 'No such repo or path. Call list_github_repos or read_github_path on the parent folder to find the right name.' };
+    }
     const message = error instanceof Error ? error.message : 'unknown error';
     console.error(`[tool:${name}] failed:`, message);
     return {

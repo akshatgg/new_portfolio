@@ -1,5 +1,6 @@
 import { knowledgeStatus } from '@/lib/knowledge';
 import { isConfigured, listPages } from '@/lib/confluence';
+import * as github from '@/lib/github';
 import { DOC_NAMES, readDoc } from '@/lib/resume';
 
 export const runtime = 'nodejs';
@@ -11,7 +12,7 @@ export const runtime = 'nodejs';
  */
 export async function GET() {
   const checks: Record<string, unknown> = {
-    model: process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite',
+    model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
     geminiKeyConfigured: Boolean(process.env.GEMINI_API_KEY),
     allowedOriginsConfigured: Boolean(process.env.ALLOWED_ORIGINS),
     atlassianConfigured: isConfigured(),
@@ -31,6 +32,25 @@ export async function GET() {
     }
   } else {
     checks.confluence = { ok: false, error: 'ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN not set' };
+  }
+
+  // GitHub: optional, so it reports but never fails the check. Without a token
+  // the tools still read public repos, just under a far smaller rate limit.
+  try {
+    const repos = await github.listRepos();
+    checks.github = {
+      ok: true,
+      owner: github.owner(),
+      tokenConfigured: github.isConfigured(),
+      repoCount: repos.length,
+      privateRepoCount: repos.filter((r) => r.private).length,
+    };
+  } catch (error) {
+    checks.github = {
+      ok: false,
+      tokenConfigured: github.isConfigured(),
+      error: error instanceof Error ? error.message : 'unknown error',
+    };
   }
 
   // PDFs: does extraction actually work in this runtime?
