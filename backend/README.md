@@ -21,7 +21,7 @@ IndexedDB: chat history
                         validate → CORS → rate limit
                                   │
                                   ▼
-                        ┌── agent loop (max 4 rounds) ──┐
+                        ┌── agent loop (max 10 rounds) ──┐
                         │                                │
                         │   Gemini  ──────────────────────────▶ Gemini API
                         │     │ wants a tool?             │
@@ -30,6 +30,7 @@ IndexedDB: chat history
                         │   read_confluence_page   ───────────▶ (live)
                         │   list_documents         ───────────▶
                         │   read_resume            ──▶ data/docs/*.pdf
+                        │   github tools           ───────────▶ GitHub API
                         │     │                           │
                         │     └── results back to Gemini ─┘
                         └────────────────────────────────┘
@@ -51,8 +52,18 @@ whole `messages` array rather than a session id.
 | `search_confluence(query)` | CQL full-text search across the space. Returns titles, ids, excerpts. |
 | `read_confluence_page(page_id)` | Full text of one page, converted from Confluence storage format to readable Markdown. |
 | `read_resume(document)` | Text of `resume` or `cv`, extracted from the PDFs in `data/docs/`. |
+| `list_github_repos` | Every readable repo under `GITHUB_OWNER`: description, language, topics, stars, fork flag, last push. |
+| `read_github_repo(repo)` | README, language breakdown, top-level layout and the last 10 commit messages. |
+| `read_github_path(repo, path)` | A folder listing or one file's source (20k chars max, token-shaped strings redacted). |
+| `search_github_code(query, repo?)` | GitHub code search scoped to the owner (or one repo). Needs `GITHUB_TOKEN`. |
 
-Tool results are capped at 24k characters each, and the loop stops after 4 rounds — both
+The GitHub tools back a public chat, so anything they can read a visitor can ask for.
+Only public repos are exposed unless a private repo is named in `GITHUB_PRIVATE_REPOS`; a
+hidden repo reports as "not found". Secret-looking files (`.env`, keys, credentials,
+`google-services.json`, …) are refused whatever repo they're in, and search qualifiers in
+a query are stripped so it can't reach outside the owner.
+
+Tool results are capped at 24k characters each, and the loop stops after 10 rounds — both
 bound latency and spend if the model fails to converge.
 
 ## Setup
@@ -70,9 +81,11 @@ npm run dev              # http://localhost:4000
 | `GEMINI_API_KEY` | yes | Gemini Developer API key ([AI Studio](https://aistudio.google.com/apikey)). |
 | `ATLASSIAN_EMAIL` | for live docs | The Atlassian account email — `akshatg9636@gmail.com`. |
 | `ATLASSIAN_API_TOKEN` | for live docs | [Create one here](https://id.atlassian.com/manage-profile/security/api-tokens). |
+| `GITHUB_TOKEN` | for code search | Read-only token for `akshatgg` — fine-grained, Contents + Metadata read. Public repos work without it at 60 req/hour. |
+| `GITHUB_PRIVATE_REPOS` | no | Comma-separated private repos the chat may read, or `*`. Default: none. |
 | `ALLOWED_ORIGINS` | in production | Comma-separated origins permitted to call the API. Without it, only localhost. |
-| `GEMINI_MODEL` | no | Defaults to `gemini-3.5-flash-lite`. |
-| `RATE_LIMIT_PER_MINUTE` | no | Per-IP cap, default 10. |
+| `GEMINI_MODEL` | no | Defaults to `gemini-3.8-flash`. |
+| `RATE_LIMIT_PER_MINUTE` | no | Per-IP cap, default 20. |
 | `CONFLUENCE_CACHE_TTL_MS` | no | Per-instance cache lifetime, default 15 min. |
 
 **No Confluence app is required** — not a Marketplace app, not Forge, not OAuth. A plain
@@ -90,7 +103,7 @@ Exercises every dependency — Gemini config, the system prompt, a real Confluen
 PDF extraction. Returns 503 if any fails. Never returns a credential.
 
 ```json
-{ "ok": true, "model": "gemini-3.5-flash-lite", "mode": "live-confluence",
+{ "ok": true, "model": "gemini-3.8-flash", "mode": "live-confluence",
   "confluence": { "ok": true, "pageCount": 10 },
   "documents": { "ok": true, "extractedChars": { "resume": 5278, "cv": 13060 } } }
 ```
@@ -104,7 +117,7 @@ PDF extraction. Returns 503 if any fails. Never returns a credential.
 ```
 
 - `role` is `user` or `assistant`; the last message must be from `user`.
-- Max 20 messages per request, max 2,000 characters each.
+- Max 24 messages per request; user messages up to 8,000 characters, assistant replies up to 24,000.
 
 **Response** — a `text/plain` stream, not JSON and not SSE. Read it with a standard reader;
 no event parsing needed.
@@ -163,7 +176,7 @@ Root Directory is not settable from the Vercel CLI — it was set via
 
 ## Cost and latency
 
-`gemini-3.5-flash-lite` with a ~3.4k-token system prompt. A question needing two tool
+`gemini-3.8-flash` with a ~5k-token system prompt. A question needing two tool
 rounds makes three model calls and pulls up to ~24k characters of document text, so expect
 roughly a cent per conversation rather than a tenth of one — the tools trade tokens for
 accuracy and currency.

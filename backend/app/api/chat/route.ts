@@ -8,19 +8,24 @@ import { declarations, execute } from '@/lib/tools';
 export const runtime = 'nodejs';
 // Tool rounds mean several sequential model calls, so allow more wall clock
 // than a single-shot completion would need.
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // Pinned deliberately. `gemini-flash-lite-latest` also works and auto-upgrades,
 // but a pinned id fails loudly when it is retired rather than silently changing
 // behaviour — 2.5-flash-lite was withdrawn from new users exactly this way.
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite';
-const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 10);
+const MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.8-flash';
+const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 20);
 
 // Bound on the agent loop. Each round is a model call plus its tool calls, so
 // this caps both latency and spend if the model ever fails to converge.
-// list_documents → search → read → read is four rounds on its own, so the cap
-// has to leave room for a fifth round that actually answers.
-const MAX_TOOL_ROUNDS = 6;
+// The 3.x models make one lookup per round and like to cross-check the portfolio
+// against the code, so a thorough answer can take eight or nine rounds.
+const MAX_TOOL_ROUNDS = 10;
+
+// Technical questions can want a code sample or a design walkthrough, which a
+// short-answer budget cuts off mid-block. Still well under MAX_CHARS_PER_REPLY,
+// so the reply can be replayed as history.
+const MAX_OUTPUT_TOKENS = 4_000;
 
 // Guardrails on what a client may send. The browser holds conversation history
 // in IndexedDB and replays it on every request, so these caps also bound how
@@ -29,12 +34,13 @@ const MAX_TOOL_ROUNDS = 6;
 // so this must clear 21 with room to spare — otherwise the cap the client is
 // respecting is still the cap that rejects it.
 const MAX_MESSAGES = 24;
-// What a visitor may type — an abuse guard on the one field they control.
-const MAX_CHARS_PER_MESSAGE = 2_000;
+// What a visitor may type — an abuse guard on the one field they control. Roomy
+// enough to paste a whole job description in front of a question.
+const MAX_CHARS_PER_MESSAGE = 8_000;
 // Assistant turns are this API's own prior output being replayed, so holding them
 // to the visitor's limit rejects a conversation for the crime of having answered
 // well: one long reply and every following request 400s.
-const MAX_CHARS_PER_REPLY = 12_000;
+const MAX_CHARS_PER_REPLY = 24_000;
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -47,6 +53,29 @@ function genai(): GoogleGenAI {
     client = new GoogleGenAI({ apiKey });
   }
   return client;
+}
+
+/**
+ * The conversation with every tool call and tool result rewritten as plain text.
+ * Used for the final forced answer: with no function parts left and no tools
+ * declared, the model has nothing to call and has to write. Switching calling
+ * off with toolConfig mode NONE is not enough — gemini-3.8-flash still answers a
+ * tool-heavy history with a function call and an empty text part.
+ */
+function flattenToolTurns(contents: Content[]): Content[] {
+  return contents.map((content) => {
+    const parts = (content.parts ?? []).flatMap((part): Part[] => {
+      if (part.functionCall) {
+        return [{ text: `[I looked up ${part.functionCall.name} ${JSON.stringify(part.functionCall.args ?? {})}]` }];
+      }
+      if (part.functionResponse) {
+        return [{ text: `[Result of ${part.functionResponse.name}]\n${JSON.stringify(part.functionResponse.response ?? {})}` }];
+      }
+      if (part.text) return [{ text: part.text }];
+      return [];
+    });
+    return { role: content.role, parts: parts.length ? parts : [{ text: '…' }] };
+  });
 }
 
 function json(body: unknown, status: number, headers: Record<string, string>) {
@@ -135,7 +164,7 @@ export async function POST(request: Request) {
   const config = {
     systemInstruction: buildSystemInstruction(),
     tools: [{ functionDeclarations: declarations }],
-    maxOutputTokens: 1_200,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
     temperature: 0.7,
   };
 
@@ -200,13 +229,13 @@ export async function POST(request: Request) {
         // by now and just needs to be made to commit to an answer.
         const forced = await genai().models.generateContentStream({
           model: MODEL,
-          contents,
+          contents: flattenToolTurns(contents),
           config: {
             systemInstruction:
-              buildSystemInstruction() +
+              config.systemInstruction +
               '\n\nYou have gathered enough. Answer now from what you have retrieved. ' +
               'Do not request anything further.',
-            maxOutputTokens: 1_200,
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
             temperature: 0.7,
           },
         });
