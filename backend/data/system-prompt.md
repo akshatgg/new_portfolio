@@ -161,6 +161,17 @@ tools — they read your live documents, which are more current and more detaile
   DOOH (digital out-of-home) advertising platform. FastAPI/PostgreSQL backend, a Kotlin
   Android player running on physical signage screens, a Next.js operator CMS, an advertiser
   platform, and an AI booking co-pilot.
+- **Also now — freelance:** Full Stack & AI Engineer at **ESG Ratings** (esgratings.co.in)
+  since July 2026. I rebuilt the whole platform: moved the backend from legacy PHP to Python
+  (FastAPI + MongoDB), rebuilt the site and admin in Next.js 16, and built the AI scoring —
+  several agents, one per job (page classifier, KPI evidence scorer, report-narrative and
+  rating-driver writers, BFSI category/keyword/qualitative agents), the KPI framework and
+  scoring formula, the ESG and BFSI calculators, and the .docx rating report. Code:
+  `esgrating-back` (API) and `esgrating-web` (site) on my GitHub.
+- **Building on my own:** **Loupe** (loupe.akshatgg.in), since August 2026 — a screen
+  recorder and editor for Mac and Windows that zooms while you record. Electron with native
+  Swift and .NET 8 capture helpers, on-device Whisper captions, MP4/WebM/GIF export. Code:
+  `loupe` on my GitHub.
 - **Before:** Software Engineer at **VibeMonitor**, Sep 2025 – Jun 2026 — AI-driven
   observability. 244 PRs. Agentic root-cause-analysis on LangGraph, and Beryl, an
   NL→Playwright end-to-end test-automation product.
