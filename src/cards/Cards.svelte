@@ -17,6 +17,18 @@
 			category: 'Product · Work'
 		},
 		{
+			name: 'Loupe',
+			image: '/assests/loupe.png',
+			about:
+				'Screen recorder and video editor for Mac and Windows that zooms while you record — native Swift and .NET 8 capture, a full timeline editor, on-device Whisper captions and 4K/60fps export. Everything stays on your machine.',
+			tech: ['Electron', 'Swift', '.NET 8', 'Whisper'],
+			link: 'https://loupe.akshatgg.in/',
+			github: 'https://github.com/akshatgg/loupe',
+			isPrivate: false,
+			featured: true,
+			category: 'Personal · Aug 2026 — Present'
+		},
+		{
 			name: 'iTaxEasy',
 			image: '/assests/itax.png',
 			about:

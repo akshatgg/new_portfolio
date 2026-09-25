@@ -14,7 +14,7 @@ import { join } from 'node:path';
 
 const DOCS = {
   resume: { file: 'resume.pdf', label: 'Résumé (one page)' },
-  cv: { file: 'cv.pdf', label: 'CV (long form, three pages)' },
+  cv: { file: 'cv.pdf', label: 'CV (long form, four pages)' },
 } as const;
 
 export type DocName = keyof typeof DOCS;

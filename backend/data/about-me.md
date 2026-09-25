@@ -1,6 +1,6 @@
 # Akshat Gupta — knowledge base
 
-Last rebuilt: 2026-08-07. Source: Confluence engineering portfolio, CV/résumé, Adneuron + personal GitHub.
+Last rebuilt: 2026-09-25. Source: Confluence engineering portfolio, CV/résumé, Adneuron + personal GitHub.
 
 ## Identity
 
@@ -64,6 +64,18 @@ Next.js operator CMS      Next.js advertiser platform
 - **Operating hours.** Every screen has a daily window in IST. Outside it the screen goes black and drops to a slow keep-alive heartbeat rather than going silent — so a change to a closed screen's hours still reaches it. A quiet screen outside hours reads as *off-hours*, not *offline*, so it never pages anyone.
 - **Timezones.** All wall-clock and calendar logic is interpreted in IST as a core decision, after a bug where the AI booked campaigns into the wrong year traced straight back to timezone handling.
 
+## Also current — ESG Ratings (freelance, Jul 2026 – present)
+
+**Full Stack & AI Engineer, freelance.** [esgratings.co.in](https://esgratings.co.in/) — an AI-driven ESG rating platform that scores sustainability reports for corporates and BFSI lenders. Runs alongside the Mark AI role. Code: [`esgrating-back`](https://github.com/akshatgg/esgrating-back) (API) and [`esgrating-web`](https://github.com/akshatgg/esgrating-web) (site).
+
+- **Full revamp and stack change.** Rebuilt the whole platform. Moved the backend from legacy PHP calculators to one Python **FastAPI** service on **MongoDB**; rebuilt the public site, both calculators and the superadmin dashboard in **Next.js 16** (App Router), **React 19**, **TypeScript** and **Tailwind CSS v4**.
+- **Multiple AI agents, one per scenario.** A page classifier (pillars, themes, relevance), a KPI evidence-analysis and scoring engine, a report-narrative writer and a rating-drivers writer, plus separate BFSI category, keyword and qualitative agents. Pages are fanned out concurrently with a thread pool; LLM responses are cached by SHA-256 of the page text so a re-run costs nothing.
+- **KPI framework and scoring formula** — defined the KPIs and wrote, then corrected, the formula: each KPI scored 0–100 on the evidence a page gives, the strongest evidence anywhere in the report wins (not found = 0), evidence-type and sector-materiality weighting, a pillar is the average of its KPIs, overall = 35% E + 30% S + 35% G, then transition and controversy adjustments and rating safeguards down to a final grade.
+- **Two calculators** — the ESG calculator and the BFSI calculator (same E/S/G scoring, plus loan-type weightings and a lending recommendation). Both read PDF/DOCX sustainability reports.
+- **Rating report** — an editable, client-branded .docx ESG Rating Summary built from the stored scores; only the prose (executive summary, pillar narratives, strengths, weaknesses, rationale) is AI-written. Plus in-browser PDF export.
+- **UI** — designed and built the public site, a TipTap blog editor, and an admin dashboard with Chart.js visualisations.
+- **Infra** — AWS Lightsail, Docker Compose, Caddy auto-TLS, MongoDB Atlas over IAM auth, secrets in SSM Parameter Store, one-command deploy. The scoring model is switchable between OpenAI and Amazon Bedrock from the dashboard. Tests run fully offline (mongomock, no real LLM calls).
+
 ## Previous role — VibeMonitor (Sep 2025 – Jun 2026)
 
 **Software Engineer, full-time.** AI-driven observability and monitoring platform. **244 pull requests authored, 215 merged**, across `vm-api` (Python/FastAPI, 119 PRs) and `vm-webapp` (Next.js/React, 118 PRs), plus SDKs, landing site and scheduler. 35+ backend domain modules.
@@ -90,6 +102,8 @@ Next.js operator CMS      Next.js advertiser platform
 
 ## Personal projects
 
+**Loupe** — current, Aug 2026 – present. Electron, Swift, .NET 8, WebCodecs, Whisper/ONNX. A free screen recorder and editor for Mac and Windows that **zooms while you record**: hold a key and scroll to zoom up to 4×, the view follows the cursor. Native capture written twice behind one protocol — Swift (ScreenCaptureKit, CGEventTap, AVFoundation) on macOS, one .NET 8 program (Windows.Graphics.Capture, low-level input hooks, Media Foundation) on Windows. A timeline editor with cuts, undo, 0.25×–8× speed ramps that keep voices at natural pitch (WSOLA), annotations, webcam bubble, keystroke overlay and backgrounds. On-device Whisper captions via transformers.js, RNNoise denoising, music ducking, voiceover. Exports MP4/WebM/GIF at up to 4K 60 fps, with a mode that fits a file-size limit. Ships as a DMG, a Homebrew cask and a Windows installer; everything stays on the user's machine. [Site](https://loupe.akshatgg.in/) · [Repo](https://github.com/akshatgg/loupe)
+
 **Cosmic-Trek (Orrery App)** — flagship. Three.js, WebGL, D3.js, GSAP, Vite, RAG. An interactive 3D solar-system simulator with 8+ celestial bodies and 50+ exoplanets, cutting rendering time 60%. A physics-based satellite-launch simulator with 5+ orbital patterns, reducing computation load 30%. Realistic collision and gravitational simulations with 10+ custom impact effects. Plus a RAG chatbot grounded strictly in the Orbital Mechanics textbook — it answers only from that source and declines questions outside the book's scope. [Repo](https://github.com/akshatgg/OrreyApp)
 
 **UpInTheSky** — React, Firebase, Firestore, Tailwind. A full-stack travel-booking frontend with a seamless booking flow, Firestore for real-time data and Firebase Auth for login, handling 50+ travel listings across multiple destinations.
@@ -100,21 +114,21 @@ Next.js operator CMS      Next.js advertiser platform
 
 ## Technical skills
 
-**Languages:** Python, TypeScript, JavaScript, Kotlin, Java, SQL. Exposure to Go, Dart, C, C++.
+**Languages:** Python, TypeScript, JavaScript, Kotlin, Java, Swift, C#, SQL. Exposure to Go, Dart, C, C++.
 
 **Backend:** FastAPI, SQLAlchemy 2.0 async, Alembic, Pydantic v2, asyncpg, Node.js, Express.js, Uvicorn, Poetry. REST API design with a router → service → schema → model separation. JWT, OAuth 2.0 with PKCE, HttpOnly refresh-token rotation. Stripe and Razorpay.
 
 **Mobile / signage:** Kotlin Android, ExoPlayer, WorkManager, PixelCopy, LocationManager/Geocoder, AOSP without Play Services, proof-of-play, real-device debugging over adb.
 
-**Frontend:** Next.js 15, React 19, Tailwind CSS 4, Radix UI/shadcn, Zustand, TanStack Query, TipTap, Recharts, React Flow, Three.js/WebGL, Angular, Redux, Vite, SvelteKit.
+**Frontend:** Next.js 15, React 19, Tailwind CSS 4, Radix UI/shadcn, Zustand, TanStack Query, TipTap, Recharts, React Flow, Three.js/WebGL, Angular, Redux, Vite, SvelteKit, Electron (desktop).
 
-**AI / LLM:** LangGraph, LangChain, tool-calling agents, agent guardrails, LangFuse, LangSmith, OpenAI, Google Gemini, Azure OpenAI, RAG, Playwright NL→script, tree-sitter, HolmesGPT benchmark, Hunyuan3D, LaMa inpainting.
+**AI / LLM:** LangGraph, LangChain, tool-calling agents, agent guardrails, LangFuse, LangSmith, OpenAI, Amazon Bedrock, Google Gemini, Azure OpenAI, Whisper (on-device, ONNX), RAG, Playwright NL→script, tree-sitter, HolmesGPT benchmark, Hunyuan3D, LaMa inpainting.
 
 **Databases:** PostgreSQL, Cloud SQL, ClickHouse, MongoDB, Redis, Firebase/Firestore, Prisma, Mongoose, AWS S3, GCS with signed URLs.
 
 **Observability:** Prometheus, Grafana, Datadog, New Relic APM, AWS CloudWatch, OpenTelemetry, Loki, Tempo, Mimir, SigNoz, Sentry, Azure Monitor, GCP Monitoring. RED and USE methodologies.
 
-**Cloud / DevOps:** AWS (EKS, ECS, RDS, IAM, CloudWatch, S3), GCP (Cloud Run, Cloud SQL, GCS, L4 GPU), Workload Identity Federation, Azure, Docker, Kubernetes, GitHub Actions CI/CD, hPanel.
+**Cloud / DevOps:** AWS (EKS, ECS, RDS, IAM, CloudWatch, S3), AWS Lightsail + SSM Parameter Store, GCP (Cloud Run, Cloud SQL, GCS, L4 GPU), Caddy, MongoDB Atlas, Workload Identity Federation, Azure, Docker, Kubernetes, GitHub Actions CI/CD, hPanel.
 
 **Security:** SOC 2 work, Dependabot, pip-audit, Bandit, Gitleaks, Presidio PII redaction, SSRF guards, Cloudflare Turnstile, credential encryption, signed device payloads.
 

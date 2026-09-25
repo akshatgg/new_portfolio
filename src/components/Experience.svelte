@@ -22,6 +22,23 @@
 			tech: ['FastAPI', 'Python', 'Kotlin', 'React', 'Three.js', 'Blender', 'Hunyuan 3D', 'MindAR', 'WebSocket', 'GCP']
 		},
 		{
+			company: 'ESG Ratings',
+			role: 'Full Stack & AI Engineer · Freelance',
+			period: 'Jul 2026 — Present',
+			location: 'Remote · India',
+			website: 'https://esgratings.co.in/',
+			logo: 'mdi:leaf',
+			highlights: [
+				'Revamped the whole platform end to end and moved the entire backend from legacy PHP to Python — one FastAPI service on MongoDB — while rebuilding the public site, both calculators and the superadmin dashboard in Next.js 16, React 19, TypeScript and Tailwind CSS v4.',
+				'Built multiple AI agents, one for every scenario — a page classifier, a KPI evidence-scoring engine, report narrative and rating-driver writers, plus separate BFSI category, keyword and qualitative agents — fanned out concurrently across report pages with SHA-256 caching so repeat runs cost nothing.',
+				'Defined the KPI framework and wrote (and fixed) the scoring formula: every KPI scored 0–100 on its evidence, best evidence wins, evidence-type and sector-materiality weighting, 35/30/35 E/S/G pillar weights, then transition and controversy adjustments and rating safeguards down to a final grade.',
+				'Built both public calculators — ESG and BFSI, the latter with loan-type weightings and a lending recommendation — that read PDF/DOCX sustainability reports and return a graded, per-KPI breakdown.',
+				'Designed the whole UI and built the editable rating report: a client-branded .docx ESG Rating Summary generated from the stored scores with AI-written narrative, plus in-browser PDF export.',
+				'Deployed on AWS Lightsail with Docker Compose and Caddy auto-TLS, MongoDB Atlas over IAM auth and secrets in SSM Parameter Store, with the scoring model switchable between OpenAI and Amazon Bedrock from the dashboard.'
+			],
+			tech: ['FastAPI', 'Python', 'Next.js', 'React', 'TypeScript', 'MongoDB', 'OpenAI', 'Amazon Bedrock', 'AWS', 'Docker']
+		},
+		{
 			company: 'Beryl',
 			role: 'Software Engineer · Full Time',
 			period: 'Sep 2025 — Jun 2026',
