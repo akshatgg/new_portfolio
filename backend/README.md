@@ -29,7 +29,7 @@ IndexedDB: chat history
                         │   search_confluence      ───────────▶ Confluence
                         │   read_confluence_page   ───────────▶ (live)
                         │   list_documents         ───────────▶
-                        │   read_resume            ──▶ data/docs/*.pdf
+                        │   research_company       ───────────▶ Google Search
                         │   github tools           ───────────▶ GitHub API
                         │     │                           │
                         │     └── results back to Gemini ─┘
@@ -48,10 +48,10 @@ whole `messages` array rather than a session id.
 
 | Tool | Purpose |
 |---|---|
-| `list_documents` | Every Confluence page (title + id) and the available PDFs. Cheap orientation when the model doesn't know where to look. |
+| `list_documents` | Every Confluence page (title + id). The PDFs in `data/docs/` are exports of these pages and are already in the prompt. |
 | `search_confluence(query)` | CQL full-text search across the space. Returns titles, ids, excerpts. |
 | `read_confluence_page(page_id)` | Full text of one page, converted from Confluence storage format to readable Markdown. |
-| `read_resume(document)` | Text of `resume` or `cv`, extracted from the PDFs in `data/docs/`. |
+| `research_company(company, hint?)` | Looks a company up with Google Search grounding, so "why do you want to join X" is answered about X. |
 | `list_github_repos` | Every readable repo under `GITHUB_OWNER`: description, language, topics, stars, fork flag, last push. |
 | `read_github_repo(repo)` | README, language breakdown, top-level layout and the last 10 commit messages. |
 | `read_github_path(repo, path)` | A folder listing or one file's source (20k chars max, token-shaped strings redacted). |
@@ -92,8 +92,8 @@ npm run dev              # http://localhost:4000
 API token over Basic auth is enough, because this is one account reading its own space.
 Apps are only needed when third parties authorise an integration.
 
-If the Atlassian variables are missing the agent still runs: it falls back to the static
-`data/about-me.md` snapshot and is told not to call the Confluence tools.
+If the Atlassian variables are missing the agent still runs: the PDFs in `data/docs/` are
+always in the prompt, and it is told not to call the Confluence tools.
 
 ## API
 
@@ -155,9 +155,8 @@ Then append `{ role: 'assistant', content: answer }` to IndexedDB alongside the 
 | What | Where | Refresh |
 |---|---|---|
 | Confluence pages | `akshatg9636.atlassian.net`, space `~7120200844476cfa4946c3b51daf1ada4a318d` | Edit the page — live, no deploy |
-| Résumé / CV | `data/docs/resume.pdf`, `data/docs/cv.pdf` (copies of `static/Akshat.pdf` and `static/Akshat_CV.pdf`) | Replace the file and redeploy |
+| The agent's memory | The nine PDFs in `data/docs/` — résumé, CV and the exported portfolio pages, listed in `lib/resume.ts`. All of them go into the system prompt. | Replace the file and redeploy |
 | Behaviour rules | `data/system-prompt.md` | Edit and redeploy |
-| Offline fallback | `data/about-me.md` | Only used when Atlassian credentials are absent |
 
 `data/system-prompt.md` also carries two standing corrections: don't quote a Mark AI fleet
 size, and don't describe the Android player as using a WebSocket. Both are stale résumé

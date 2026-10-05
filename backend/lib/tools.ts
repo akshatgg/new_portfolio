@@ -1,7 +1,7 @@
 import { Type, type FunctionDeclaration } from '@google/genai';
 import * as confluence from '@/lib/confluence';
 import * as github from '@/lib/github';
-import { DOC_NAMES, describeDocs, isDocName, readDoc } from '@/lib/resume';
+import { researchCompany } from '@/lib/company';
 
 /**
  * The tool surface the model sees.
@@ -14,7 +14,7 @@ export const declarations: FunctionDeclaration[] = [
   {
     name: 'list_documents',
     description:
-      "List every document available about Akshat: the pages in his Confluence engineering portfolio, plus his résumé and CV. Call this first when you do not know which document holds the answer, or when asked what information exists.",
+      "List the pages in Akshat's live Confluence engineering portfolio. The documents in the system prompt are exports of these pages; call this only when you want the newest version of one.",
     parameters: { type: Type.OBJECT, properties: {} },
   },
   {
@@ -49,17 +49,20 @@ export const declarations: FunctionDeclaration[] = [
     },
   },
   {
-    name: 'read_resume',
-    description: `Read the full text of one of Akshat's PDF documents: ${describeDocs()}. Use for questions about his formal CV, education, contact details, or a compact summary of his experience.`,
+    name: 'research_company',
+    description:
+      'Look a company up on the web: what it does, its products, its market, recent news. Call this before answering anything about a company the visitor names — "why do you want to join X", "what interests you about X", "what do you think of our product", "how would you fit at X" — unless you already researched that company earlier in this conversation.',
     parameters: {
       type: Type.OBJECT,
       properties: {
-        document: {
+        company: { type: Type.STRING, description: 'The company name as the visitor gave it.' },
+        hint: {
           type: Type.STRING,
-          description: `Which document to read. One of: ${DOC_NAMES.join(', ')}.`,
+          description:
+            'Optional. Anything the visitor said that pins down which company this is or what the role is: a website, a one-line description, the job title.',
         },
       },
-      required: ['document'],
+      required: ['company'],
     },
   },
   {
@@ -144,7 +147,6 @@ export async function execute(
         const pages = await confluence.listPages();
         return {
           confluence_pages: pages.map((p) => ({ id: p.id, title: p.title })),
-          pdf_documents: DOC_NAMES,
         };
       }
 
@@ -164,12 +166,13 @@ export async function execute(
         return { id: page.id, title: page.title, content: truncate(page.text) };
       }
 
-      case 'read_resume': {
-        const doc = String(args.document ?? '').trim();
-        if (!isDocName(doc)) {
-          return { error: `document must be one of: ${DOC_NAMES.join(', ')}` };
-        }
-        return { document: doc, content: truncate(await readDoc(doc)) };
+      case 'research_company': {
+        const company = String(args.company ?? '').trim();
+        if (!company) return { error: 'company is required' };
+        const brief = await researchCompany(company, String(args.hint ?? '').trim());
+        return brief.summary
+          ? { ...brief }
+          : { error: 'Nothing came back for that company. Answer from what you know of it and from the role.' };
       }
 
       case 'list_github_repos': {
@@ -213,7 +216,7 @@ export async function execute(
     const message = error instanceof Error ? error.message : 'unknown error';
     console.error(`[tool:${name}] failed:`, message);
     return {
-      error: `That lookup failed: ${message}. Answer from what you already have, or say you cannot retrieve it.`,
+      error: `That lookup failed: ${message}. Answer from what you already have.`,
     };
   }
 }
