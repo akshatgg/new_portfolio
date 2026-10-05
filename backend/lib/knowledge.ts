@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isConfigured } from '@/lib/confluence';
+import { readAllDocs } from '@/lib/resume';
 
 /**
- * The system prompt is deliberately small: orientation plus behaviour rules.
- * Facts come from tools reading the live Confluence space and the PDFs, so the
- * assistant reflects whatever Akshat published today rather than a snapshot.
- *
- * `data/about-me.md` is kept only as a fallback for when Atlassian credentials
- * are absent — without it an unconfigured deployment could answer nothing.
+ * The system prompt is the behaviour rules plus everything Akshat has written
+ * about his own work — the PDFs in data/docs, in full. He is asked the same
+ * things a candidate is asked in an interview, and a candidate does not go and
+ * look up their own history before answering. Tools add what memory cannot:
+ * the code on GitHub, and what a company the visitor names actually does.
  */
 
 // A deployment is immutable, so caching these files is free there. In dev it is
@@ -25,26 +25,27 @@ function readData(file: string): string {
   return text;
 }
 
-export function buildSystemInstruction(): string {
-  const base = readData('system-prompt.md');
+export async function buildSystemInstruction(): Promise<string> {
+  const parts = [
+    readData('system-prompt.md'),
+    '',
+    '## My documents',
+    '',
+    await readAllDocs(),
+  ];
 
-  if (isConfigured()) return base;
+  if (!isConfigured()) {
+    // No Atlassian credentials: the Confluence tools would fail on every call.
+    parts.push(
+      '',
+      '## Tool availability',
+      '',
+      'Confluence is not reachable in this deployment — do not call `list_documents`,',
+      '`search_confluence`, or `read_confluence_page`. Everything in it is in the documents above.',
+    );
+  }
 
-  // No Atlassian credentials: the Confluence tools will fail on every call, so
-  // fall back to the baked snapshot and tell the model not to reach for them.
-  return [
-    base,
-    '',
-    '## Tool availability',
-    '',
-    'Confluence is not reachable in this deployment — do not call `list_documents`,',
-    '`search_confluence`, or `read_confluence_page`. `read_resume` still works.',
-    'Answer from the snapshot below, and say plainly when something is not in it.',
-    '',
-    '--- SNAPSHOT ---',
-    '',
-    readData('about-me.md'),
-  ].join('\n');
+  return parts.join('\n');
 }
 
 /** Surfaced by /api/health so a deploy problem is visible without a chat turn. */

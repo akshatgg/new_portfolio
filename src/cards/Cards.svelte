@@ -29,6 +29,18 @@
 			category: 'Personal · Aug 2026 — Present'
 		},
 		{
+			name: 'Souffleur',
+			image: '/assests/souffleur.png',
+			about:
+				'A hidden AI prompter for calls on Mac and Windows — an always-on-top overlay that sees your screen, hears the other side through a native ScreenCaptureKit audio tap, and answers in place, while staying out of the screen share (measured: hidden in 151 of 151 captured frames).',
+			tech: ['Electron', 'Swift', 'Gemini', 'OpenAI'],
+			link: 'https://getsouffleur.vercel.app',
+			github: 'https://github.com/akshatgg',
+			isPrivate: true,
+			featured: true,
+			category: 'Personal · Sep 2026 — Present'
+		},
+		{
 			name: 'iTaxEasy',
 			image: '/assests/itax.png',
 			about:

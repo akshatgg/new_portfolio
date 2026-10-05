@@ -4,7 +4,7 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
 
-  // data/about-me.md is read at runtime with node:fs. Next's bundler cannot see
+  // The prompt and the PDFs in data/ are read at runtime with node:fs. Next's bundler cannot see
   // that dependency by static analysis, so it must be traced explicitly or the
   // file is missing from the deployed function.
   outputFileTracingIncludes: {

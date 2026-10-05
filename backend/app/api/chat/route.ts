@@ -1,4 +1,5 @@
-import { GoogleGenAI, type Content, type Part } from '@google/genai';
+import type { Content, Part } from '@google/genai';
+import { MODEL, genai } from '@/lib/gemini';
 import { buildSystemInstruction } from '@/lib/knowledge';
 import { corsHeaders, isAllowedOrigin } from '@/lib/cors';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
@@ -10,10 +11,6 @@ export const runtime = 'nodejs';
 // than a single-shot completion would need.
 export const maxDuration = 120;
 
-// Pinned deliberately. `gemini-flash-lite-latest` also works and auto-upgrades,
-// but a pinned id fails loudly when it is retired rather than silently changing
-// behaviour — 2.5-flash-lite was withdrawn from new users exactly this way.
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.8-flash';
 const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 20);
 
 // Bound on the agent loop. Each round is a model call plus its tool calls, so
@@ -43,17 +40,6 @@ const MAX_CHARS_PER_MESSAGE = 8_000;
 const MAX_CHARS_PER_REPLY = 24_000;
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
-
-let client: GoogleGenAI | null = null;
-
-function genai(): GoogleGenAI {
-  if (!client) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
-    client = new GoogleGenAI({ apiKey });
-  }
-  return client;
-}
 
 /**
  * The conversation with every tool call and tool result rewritten as plain text.
@@ -162,7 +148,7 @@ export async function POST(request: Request) {
   }));
 
   const config = {
-    systemInstruction: buildSystemInstruction(),
+    systemInstruction: await buildSystemInstruction(),
     tools: [{ functionDeclarations: declarations }],
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     temperature: 0.7,
